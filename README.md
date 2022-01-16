@@ -13,5 +13,7 @@ The application does not take into account the rate of inflation for the phase o
 
 To start the aplication just run `savings_plan_app.py`.
 
+![savings_plan](misc/savings_plan_screenshot_01.png)
+
 ## Dependencies
 You need to have `pyqt5` and `pyqtchart` installed (tested with version 5.15).
