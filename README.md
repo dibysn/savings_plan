@@ -13,6 +13,8 @@ The application does not take into account the rate of inflation for the dissavi
 
 To start the aplication just run `savings_plan_app.py`.
 
+For more information see [https://github.com/dibysn/savings_plan/wiki](https://github.com/dibysn/savings_plan/wiki).
+
 ![savings_plan](misc/savings_plan_screenshot_01.png)
 
 ## Dependencies
