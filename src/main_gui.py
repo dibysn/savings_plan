@@ -263,7 +263,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             'Savings plan - Information',
             ('For more information please visit my GitHub repository:'
-             '<br><center><a href=https://github.com/dibysn/savings_plan> https://github.com/dibysn/savings_plan </a>'),
+             '<br><center><a href=https://github.com/dibysn/savings_plan/wiki> https://github.com/dibysn/savings_plan/wiki </a>'),
             QtWidgets.QMessageBox.Close
             )
     
