@@ -24,8 +24,8 @@ class IconWorkarea:
 class Workarea:
     def __init__(self):
         self.slidemenu = QtWidgets.QWidget()
-        self.ui_sliedemenu = Ui_Form_Slidemenu()
-        self.ui_sliedemenu.setupUi(self.slidemenu)
+        self.ui_slidemenu = Ui_Form_Slidemenu()
+        self.ui_slidemenu.setupUi(self.slidemenu)
         self.mainbody = QtWidgets.QWidget()
         self.ui_mainbody = Ui_Form_Mainbody()
         self.ui_mainbody.setupUi(self.mainbody)
@@ -34,16 +34,16 @@ class Workarea:
         
         self.set_default_values()
         self.savings_sim = SavingsSimulation(
-            self.ui_sliedemenu.current_age.value(),
-            self.ui_sliedemenu.retirement_age.value(),
-            self.ui_sliedemenu.expected_age.value(),
-            self.ui_sliedemenu.initial_invest.value(),
-            self.ui_sliedemenu.monthly_withdrawal_nominal.value(),
-            self.ui_sliedemenu.rate_of_return.value() / 100.0,
-            self.ui_sliedemenu.rate_of_inflation.value() / 100.0,
-            self.ui_sliedemenu.flat_tax_rate.value() / 100.0,
-            self.ui_sliedemenu.solidarity_tax.value() / 100.0,
-            self.ui_sliedemenu.church_tax.value() / 100.0
+            self.ui_slidemenu.current_age.value(),
+            self.ui_slidemenu.retirement_age.value(),
+            self.ui_slidemenu.expected_age.value(),
+            self.ui_slidemenu.initial_invest.value(),
+            self.ui_slidemenu.monthly_withdrawal_nominal.value(),
+            self.ui_slidemenu.rate_of_return.value() / 100.0,
+            self.ui_slidemenu.rate_of_inflation.value() / 100.0,
+            self.ui_slidemenu.flat_tax_rate.value() / 100.0,
+            self.ui_slidemenu.solidarity_tax.value() / 100.0,
+            self.ui_slidemenu.church_tax.value() / 100.0
             )
         
         self.ui_mainbody.chart_without_tax = QtChart.QChart()
@@ -59,7 +59,7 @@ class Workarea:
         for _w in [self.ui_mainbody.chart_without_tax, self.ui_mainbody.chart_with_tax,
                     self.ui_mainbody.frame_3, self.ui_mainbody.frame_4,
                     self.ui_mainbody.frame_5, self.ui_mainbody.frame_6,
-                    self.ui_sliedemenu.data_input_header_frame]:
+                    self.ui_slidemenu.data_input_header_frame]:
             shadow = QtWidgets.QGraphicsDropShadowEffect()
             shadow.setBlurRadius(8)
             shadow.setXOffset(0)
@@ -74,34 +74,34 @@ class Workarea:
         self._update_stacked_bar_chart(
             self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
         
-        self.ui_sliedemenu.retirement_age.valueChanged.connect(
-            lambda n: self.ui_sliedemenu.current_age.setMaximum(n-1)
+        self.ui_slidemenu.retirement_age.valueChanged.connect(
+            lambda n: self.ui_slidemenu.current_age.setMaximum(n-1)
             )
-        self.ui_sliedemenu.retirement_age.valueChanged.connect(
-            lambda n: self.ui_sliedemenu.expected_age.setMinimum(n+1)
+        self.ui_slidemenu.retirement_age.valueChanged.connect(
+            lambda n: self.ui_slidemenu.expected_age.setMinimum(n+1)
             )
-        self.ui_sliedemenu.current_age.valueChanged.connect(
-            lambda n: self.ui_sliedemenu.retirement_age.setMinimum(n+1)
+        self.ui_slidemenu.current_age.valueChanged.connect(
+            lambda n: self.ui_slidemenu.retirement_age.setMinimum(n+1)
             )
-        self.ui_sliedemenu.expected_age.valueChanged.connect(
-            lambda n: self.ui_sliedemenu.retirement_age.setMaximum(n-1)
+        self.ui_slidemenu.expected_age.valueChanged.connect(
+            lambda n: self.ui_slidemenu.retirement_age.setMaximum(n-1)
             )
         
-        self.ui_sliedemenu.solidarity_tax.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.retirement_age.valueChanged['int'].connect(self.update_simulation)
-        self.ui_sliedemenu.rate_of_return.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.rate_of_inflation.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.notes.textChanged.connect(self.notes_changed)
-        self.ui_sliedemenu.monthly_withdrawal_nominal.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.initial_invest.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.include_tax_check_box.clicked['bool'].connect(self.ui_sliedemenu.flat_tax_rate.setEnabled)
-        self.ui_sliedemenu.include_tax_check_box.clicked['bool'].connect(self.ui_sliedemenu.solidarity_tax.setEnabled)
-        self.ui_sliedemenu.include_tax_check_box.clicked['bool'].connect(self.ui_sliedemenu.church_tax.setEnabled)
-        self.ui_sliedemenu.include_tax_check_box.clicked['bool'].connect(self.switch_stacked_widget)
-        self.ui_sliedemenu.flat_tax_rate.valueChanged['double'].connect(self.update_simulation)
-        self.ui_sliedemenu.expected_age.valueChanged['int'].connect(self.update_simulation)
-        self.ui_sliedemenu.current_age.valueChanged['int'].connect(self.update_simulation)
-        self.ui_sliedemenu.church_tax.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.solidarity_tax.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.retirement_age.valueChanged['int'].connect(self.update_simulation)
+        self.ui_slidemenu.rate_of_return.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.rate_of_inflation.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.notes.textChanged.connect(self.notes_changed)
+        self.ui_slidemenu.monthly_withdrawal_nominal.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.initial_invest.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.include_tax_check_box.clicked['bool'].connect(self.ui_slidemenu.flat_tax_rate.setEnabled)
+        self.ui_slidemenu.include_tax_check_box.clicked['bool'].connect(self.ui_slidemenu.solidarity_tax.setEnabled)
+        self.ui_slidemenu.include_tax_check_box.clicked['bool'].connect(self.ui_slidemenu.church_tax.setEnabled)
+        self.ui_slidemenu.include_tax_check_box.clicked['bool'].connect(self.switch_stacked_widget)
+        self.ui_slidemenu.flat_tax_rate.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.expected_age.valueChanged['int'].connect(self.update_simulation)
+        self.ui_slidemenu.current_age.valueChanged['int'].connect(self.update_simulation)
+        self.ui_slidemenu.church_tax.valueChanged['double'].connect(self.update_simulation)
         
         self.chart_without_tax_annotation = QtWidgets.QGraphicsSimpleTextItem(
             self.ui_mainbody.chart_without_tax)
@@ -129,19 +129,19 @@ class Workarea:
             callback()
     
     def set_default_values(self):
-        self.ui_sliedemenu.expected_age.setValue(99)
-        self.ui_sliedemenu.retirement_age.setValue(67)
-        self.ui_sliedemenu.current_age.setValue(30)
-        self.ui_sliedemenu.initial_invest.setValue(2000)
-        self.ui_sliedemenu.monthly_withdrawal_nominal.setValue(500)
-        self.ui_sliedemenu.rate_of_return.setValue(5.0)
-        self.ui_sliedemenu.rate_of_inflation.setValue(2.2)
-        self.ui_sliedemenu.flat_tax_rate.setValue(25)
-        self.ui_sliedemenu.solidarity_tax.setValue(5.5)
-        self.ui_sliedemenu.church_tax.setValue(8)
-        self.ui_sliedemenu.notes.clear()
-        self.ui_sliedemenu.include_tax_check_box.setChecked(False)
-        self.ui_sliedemenu.include_tax_check_box.clicked.emit(False)
+        self.ui_slidemenu.expected_age.setValue(99)
+        self.ui_slidemenu.retirement_age.setValue(67)
+        self.ui_slidemenu.current_age.setValue(30)
+        self.ui_slidemenu.initial_invest.setValue(2000)
+        self.ui_slidemenu.monthly_withdrawal_nominal.setValue(500)
+        self.ui_slidemenu.rate_of_return.setValue(5.0)
+        self.ui_slidemenu.rate_of_inflation.setValue(2.2)
+        self.ui_slidemenu.flat_tax_rate.setValue(25)
+        self.ui_slidemenu.solidarity_tax.setValue(5.5)
+        self.ui_slidemenu.church_tax.setValue(8)
+        self.ui_slidemenu.notes.clear()
+        self.ui_slidemenu.include_tax_check_box.setChecked(False)
+        self.ui_slidemenu.include_tax_check_box.clicked.emit(False)
         self._notify_change_observer()
     
     def _update_text_all_labels(self):
@@ -243,7 +243,7 @@ class Workarea:
         chart.setAxisY(value_axis, series)
     
     def show_info_label_on_hover(self, status, index):
-        if self.ui_sliedemenu.include_tax_check_box.isChecked():
+        if self.ui_slidemenu.include_tax_check_box.isChecked():
             chart = self.ui_mainbody.chart_with_tax
             chart_annotation = self.chart_with_tax_annotation
             chart_rect = self.chart_with_tax_rect
@@ -294,7 +294,7 @@ class Workarea:
     
     def notes_changed(self):
         try:
-            self.savings_sim.notes = self.ui_sliedemenu.notes.toPlainText()
+            self.savings_sim.notes = self.ui_slidemenu.notes.toPlainText()
             self._notify_change_observer()
         except:
             pass
@@ -322,18 +322,18 @@ class Workarea:
     def load_from_json_data(self, data):
         _savings_sim = SavingsSimulation.load_from_json_data(data)
         
-        self.ui_sliedemenu.current_age.setValue(_savings_sim.current_age)
-        self.ui_sliedemenu.retirement_age.setValue(_savings_sim.retirement_age)
-        self.ui_sliedemenu.expected_age.setValue(_savings_sim.expected_age)
-        self.ui_sliedemenu.initial_invest.setValue(_savings_sim.initial_invest)
-        self.ui_sliedemenu.monthly_withdrawal_nominal.setValue(_savings_sim.monthly_withdrawal_nominal)
-        self.ui_sliedemenu.rate_of_return.setValue(_savings_sim.rate_of_return * 100.0)
-        self.ui_sliedemenu.rate_of_inflation.setValue(_savings_sim.rate_of_inflation * 100.0)
-        self.ui_sliedemenu.flat_tax_rate.setValue(_savings_sim.flat_tax_rate * 100.0)
-        self.ui_sliedemenu.solidarity_tax.setValue(_savings_sim.solidarity_tax * 100.0)
-        self.ui_sliedemenu.church_tax.setValue(_savings_sim.church_tax * 100.0)
-        self.ui_sliedemenu.notes.clear()
-        self.ui_sliedemenu.notes.insertPlainText(_savings_sim.notes)
+        self.ui_slidemenu.current_age.setValue(_savings_sim.current_age)
+        self.ui_slidemenu.retirement_age.setValue(_savings_sim.retirement_age)
+        self.ui_slidemenu.expected_age.setValue(_savings_sim.expected_age)
+        self.ui_slidemenu.initial_invest.setValue(_savings_sim.initial_invest)
+        self.ui_slidemenu.monthly_withdrawal_nominal.setValue(_savings_sim.monthly_withdrawal_nominal)
+        self.ui_slidemenu.rate_of_return.setValue(_savings_sim.rate_of_return * 100.0)
+        self.ui_slidemenu.rate_of_inflation.setValue(_savings_sim.rate_of_inflation * 100.0)
+        self.ui_slidemenu.flat_tax_rate.setValue(_savings_sim.flat_tax_rate * 100.0)
+        self.ui_slidemenu.solidarity_tax.setValue(_savings_sim.solidarity_tax * 100.0)
+        self.ui_slidemenu.church_tax.setValue(_savings_sim.church_tax * 100.0)
+        self.ui_slidemenu.notes.clear()
+        self.ui_slidemenu.notes.insertPlainText(_savings_sim.notes)
         
         self.savings_sim = _savings_sim
         

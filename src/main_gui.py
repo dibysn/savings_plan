@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from src.savings_plan_ui import Ui_MainWindow
 
 from src.workareas.savings_simulation import workarea_savings_simulation
+from src.workareas.trading import workarea_trading
 
 def display_error(err):
     msg_box = QtWidgets.QMessageBox()
@@ -108,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setIconSize(QtCore.QSize(30, 30))
             button.setFlat(True)
             button.setObjectName('btn_workarea_{}'.format(n))
+            button.setProperty('class', 'btn_mainwindow')
             self.ui.verticalLayoutWorkareaButtons.addWidget(button)
             
             button.clicked.connect(activate_workarea(n))

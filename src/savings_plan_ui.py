@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui_framework.ui'
+# Form implementation generated from reading ui file 'savings_plan_ui.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -16,16 +16,30 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(875, 631)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setStyleSheet("QPushButton {\n"
+        self.centralwidget.setStyleSheet(".btn_mainwindow {\n"
 "border-radius: 8px;\n"
 "border-width: 2px;\n"
 "border-style: solid;\n"
 "}\n"
-"QPushButton:hover {\n"
+".btn_mainwindow:hover {\n"
 "border-color: rgb(136, 138, 133);\n"
 "border-radius: 8px;\n"
 "border-style: solid;\n"
 "border-width: 2px;\n"
+"}\n"
+".btn_slidemenu {\n"
+"background-color: #828282;\n"
+"padding-left: 2px;\n"
+"padding-right: 2px;\n"
+"padding-top: 2px;\n"
+"padding-bottom: 2px;\n"
+"}\n"
+".btn_mainbody {\n"
+"background-color: #828282;\n"
+"padding-left: 4px;\n"
+"padding-right: 4px;\n"
+"padding-top: 2px;\n"
+"padding-bottom: 2px;\n"
 "}\n"
 "#MainWindow {\n"
 " background-color: #E9EDF1; \n"
@@ -279,6 +293,11 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        self.btn_slidemenu.setProperty("class", _translate("MainWindow", "btn_mainwindow"))
+        self.btn_new.setProperty("class", _translate("MainWindow", "btn_mainwindow"))
+        self.btn_open.setProperty("class", _translate("MainWindow", "btn_mainwindow"))
+        self.btn_save_as.setProperty("class", _translate("MainWindow", "btn_mainwindow"))
         self.lbl_app_name.setText(_translate("MainWindow", "SAVINGS PLAN"))
+        self.btn_info.setProperty("class", _translate("MainWindow", "btn_mainwindow"))
         self.lbl_version.setText(_translate("MainWindow", "Version 0.1"))
 from src import icons_rc
