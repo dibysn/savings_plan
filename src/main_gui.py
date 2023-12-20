@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from src.savings_plan_ui import Ui_MainWindow
 
 from src.workareas.savings_simulation import workarea_savings_simulation
+from src.workareas.trading import workarea_trading
 
 def display_error(err):
     msg_box = QtWidgets.QMessageBox()
@@ -36,7 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
             )
         
         self.setWindowTitle('SAVINGS PLAN - New savings plan*')
-        self.ui.lbl_version.setText('Version 1.7')
+        self.ui.lbl_version.setText('Version 1.8')
         
         self.ui.btn_new.clicked.connect(
             self.new_savings_plan
@@ -66,18 +67,27 @@ class MainWindow(QtWidgets.QMainWindow):
         slidemenu_workarea_savings_plan, \
         mainbody_workarea_savings_plan = workarea_savings_simulation.get_workarea_icon_and_widgets()
         
+        wa_trading, \
+        icon_workarea_trading, \
+        slidemenu_workarea_trading, \
+        mainbody_workarea_trading = workarea_trading.get_workarea_icon_and_widgets()
+        
         self.workareas = {
-            wa_savings_plan.get_name_of_workarea(): wa_savings_plan
+            wa_savings_plan.get_name_of_workarea(): wa_savings_plan,
+            wa_trading.get_name_of_workarea(): wa_trading
             }
         
         self.slidemenu_workareas = [
-            slidemenu_workarea_savings_plan
+            slidemenu_workarea_savings_plan,
+            slidemenu_workarea_trading
             ]
         self.mainbody_workareas = [
-            mainbody_workarea_savings_plan
+            mainbody_workarea_savings_plan,
+            mainbody_workarea_trading
             ]
         self.icons_workareas = [
-            icon_workarea_savings_plan
+            icon_workarea_savings_plan,
+            icon_workarea_trading
             ]
         
         self.register_workareas()
