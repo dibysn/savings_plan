@@ -6,6 +6,7 @@ from src.workareas.trading.ui_mainbody_trading import Ui_Form as Ui_Form_Mainbod
 from src.workareas.trading.ui_slidemenu_trading import Ui_Form as Ui_Form_Slidemenu
 from src.workareas.trading.ui_dialog_trade import Ui_Dialog as Ui_Dialog_Trade
 from src.workareas.trading.ui_dialog_portfolio import Ui_Dialog as Ui_Dialog_Portfolio
+from src.workareas.trading.ui_dialog_table_settings import Ui_Dialog as Ui_Dialog_Table_Settings
 
 from src.workareas.trading.model.tradingmodel import TradingPortfolio, Trade
 
@@ -34,8 +35,9 @@ class Workarea:
         
         for _w in [
                 self.ui_mainbody.frame_infos_portfolio,
-                self.ui_mainbody.frame_infos_selected_trade,
-                self.ui_mainbody.table_view_trading,
+                self.ui_mainbody.table_view_trading_active,
+                self.ui_mainbody.frame_header_table_active,
+                self.ui_mainbody.frame_header_table_simulation,
                 self.ui_slidemenu.frame_header,
                 self.ui_slidemenu.frame_header_2]:
             shadow = QtWidgets.QGraphicsDropShadowEffect()
@@ -47,11 +49,35 @@ class Workarea:
         
         self._update_text_all_portfolio_specific_values()
         
-        self.table_model_trading = TradingTableModel(self.trading_portfolio)
-        self.ui_mainbody.table_view_trading.setModel(self.table_model_trading)
-        self.ui_mainbody.table_view_trading.setSelectionBehavior(QtWidgets.QTableView.SelectRows)
-        self.ui_mainbody.table_view_trading.setSelectionMode(QtWidgets.QTableView.SingleSelection)
-        self.ui_mainbody.table_view_trading.horizontalHeader().setStretchLastSection(True)
+        self.table_model_trading_active = TradingTableModel(
+            self.trading_portfolio, is_active_status = True
+            )
+        self.ui_mainbody.table_view_trading_active.setModel(
+            self.table_model_trading_active
+            )
+        self.ui_mainbody.table_view_trading_active.setSelectionBehavior(
+            QtWidgets.QTableView.SelectRows
+            )
+        self.ui_mainbody.table_view_trading_active.setSelectionMode(
+            QtWidgets.QTableView.SingleSelection
+            )
+        self.ui_mainbody.table_view_trading_active.horizontalHeader().setStretchLastSection(True)
+        
+        self.table_model_trading_simulation = TradingTableModel(
+            self.trading_portfolio, is_active_status = False
+            )
+        self.ui_mainbody.table_view_trading_simulation.setModel(
+            self.table_model_trading_simulation
+            )
+        self.ui_mainbody.table_view_trading_simulation.setSelectionBehavior(
+            QtWidgets.QTableView.SelectRows
+            )
+        self.ui_mainbody.table_view_trading_simulation.setSelectionMode(
+            QtWidgets.QTableView.SingleSelection
+            )
+        self.ui_mainbody.table_view_trading_simulation.horizontalHeader().setStretchLastSection(True)
+        
+        self._update_tables()
         
         self.ui_slidemenu.button_new_portfolio.clicked.connect(
             self.open_dialog_new_portfolio
@@ -62,16 +88,31 @@ class Workarea:
         self.ui_slidemenu.button_new_trade.clicked.connect(
             self.open_dialog_new_trade
             )
-        self.ui_slidemenu.button_edit_trade.clicked.connect(
+        self.ui_slidemenu.button_table_settings.clicked.connect(
+            self.open_dialog_table_settings
+            )
+        self.ui_mainbody.button_edit_trade_active.clicked.connect(
             self.open_dialog_edit_trade
             )
-        self.ui_mainbody.table_view_trading.doubleClicked.connect(
+        self.ui_mainbody.button_edit_trade_simulation.clicked.connect(
             self.open_dialog_edit_trade
             )
-        self.ui_slidemenu.button_delete_trade.clicked.connect(
+        self.ui_mainbody.table_view_trading_active.doubleClicked.connect(
+            self.open_dialog_edit_trade
+            )
+        self.ui_mainbody.table_view_trading_simulation.doubleClicked.connect(
+            self.open_dialog_edit_trade
+            )
+        self.ui_mainbody.button_delete_trade_active.clicked.connect(
             self.delete_trade
             )
-        self.ui_slidemenu.button_get_latest_price.clicked.connect(
+        self.ui_mainbody.button_delete_trade_simulation.clicked.connect(
+            self.delete_trade
+            )
+        self.ui_mainbody.button_get_latest_price_active.clicked.connect(
+            self.get_latest_price
+            )
+        self.ui_mainbody.button_get_latest_price_simulation.clicked.connect(
             self.get_latest_price
             )
     
@@ -92,17 +133,22 @@ class Workarea:
         _trading_portfolio = TradingPortfolio.load_from_json_data(data)
         
         self.trading_portfolio = _trading_portfolio
-        self.table_model_trading.trading_portfolio = self.trading_portfolio
+        self.table_model_trading_active.trading_portfolio = self.trading_portfolio
+        self.table_model_trading_simulation.trading_portfolio = self.trading_portfolio
         
         self._update_text_all_portfolio_specific_values()
-        self._update_table()
+        self._update_tables()
     
     def set_default_values(self):
         self.trading_portfolio = TradingPortfolio(10000.0, 0.02, 0.06)
-        self.table_model_trading.trading_portfolio = self.trading_portfolio
+        self.table_model_trading_active.trading_portfolio = self.trading_portfolio
+        self.table_model_trading_simulation.trading_portfolio = self.trading_portfolio
+        TradingTableModel.USED_COLUMNS = list(
+            TradingTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            )
         
         self._update_text_all_portfolio_specific_values()
-        self._update_table()
+        self._update_tables()
         self._notify_change_observer()
     
     def open_dialog_new_portfolio(self):
@@ -112,8 +158,9 @@ class Workarea:
         dialog_portfolio.exec()
         if dialog_portfolio.accepted:
             self.trading_portfolio = dialog_portfolio.trading_portfolio
-            self.table_model_trading.trading_portfolio = self.trading_portfolio
-            self._update_table()
+            self.table_model_trading_active.trading_portfolio = self.trading_portfolio
+            self.table_model_trading_simulation.trading_portfolio = self.trading_portfolio
+            self._update_tables()
             self._update_text_all_portfolio_specific_values()
             self._notify_change_observer()
     
@@ -123,7 +170,7 @@ class Workarea:
             )
         dialog_portfolio.exec()
         if dialog_portfolio.accepted:
-            self._update_table()
+            self._update_tables()
             self._update_text_all_portfolio_specific_values()
             self._notify_change_observer()
     
@@ -133,24 +180,46 @@ class Workarea:
             )
         dialog_trade.exec()
         if dialog_trade.accepted:
-            self._update_table()
+            self._update_tables()
             self._update_text_all_portfolio_specific_values()
             self._notify_change_observer()
     
     def open_dialog_edit_trade(self):
-        trade = self._get_selected_trade()
+        trade = None
+        _name = self.mainbody.sender().objectName()
+        if _name in ['button_edit_trade_active', 'table_view_trading_active']:
+            trade = self._get_selected_trade(active_trade = True)
+        elif _name in ['button_edit_trade_simulation', 'table_view_trading_simulation']:
+            trade = self._get_selected_trade(active_trade = False)
+        
         if trade:
             dialog_trade = DialogTrade(
                 self.trading_portfolio, is_new_trade = False, trade = trade
                 )
             dialog_trade.exec()
             if dialog_trade.accepted:
-                self._update_table()
+                self._update_tables()
                 self._update_text_all_portfolio_specific_values()
                 self._notify_change_observer()
     
+    def open_dialog_table_settings(self):
+        dialog_table_settings = DialogTableSettings(
+            TradingTableModel.COLUMN_ORDER_AND_DISPLAY,
+            TradingTableModel.USED_COLUMNS
+            )
+        dialog_table_settings.exec()
+        if dialog_table_settings.accepted:
+            TradingTableModel.USED_COLUMNS = dialog_table_settings.used_columns
+            self._update_tables()
+    
     def delete_trade(self):
-        trade = self._get_selected_trade()
+        trade = None
+        _name = self.mainbody.sender().objectName()
+        if _name == 'button_delete_trade_active':
+            trade = self._get_selected_trade(active_trade = True)
+        elif _name == 'button_delete_trade_simulation':
+            trade = self._get_selected_trade(active_trade = False)
+        
         if trade:
             message = ('Do you really want to delete trade\n'
                        '"{} ({})"?\n\n').format(
@@ -164,31 +233,47 @@ class Workarea:
                 return
             
             self.trading_portfolio.delete_trade(trade)
-            self._update_table()
+            self._update_tables()
             
             self._update_text_all_portfolio_specific_values()
             self._notify_change_observer()
     
-    def _get_selected_trade(self):
+    def _get_selected_trade(self, active_trade = True):
         trade = None
-        r = self.ui_mainbody.table_view_trading.selectionModel().selectedRows()
-        if r:
-            row = r[0].row()
-            index = self.table_model_trading.createIndex(row, 0)
-            trade = self.table_model_trading.data(index, QtCore.Qt.UserRole)
+        if active_trade:
+            r = self.ui_mainbody.table_view_trading_active.selectionModel().selectedRows()
+            if r:
+                row = r[0].row()
+                index = self.table_model_trading_active.createIndex(row, 0)
+                trade = self.table_model_trading_active.data(index, QtCore.Qt.UserRole)
+        else:
+            r = self.ui_mainbody.table_view_trading_simulation.selectionModel().selectedRows()
+            if r:
+                row = r[0].row()
+                index = self.table_model_trading_simulation.createIndex(row, 0)
+                trade = self.table_model_trading_simulation.data(index, QtCore.Qt.UserRole)
         return trade
     
     def get_latest_price(self):
-        trade = self._get_selected_trade()
+        trade = None
+        _name = self.mainbody.sender().objectName()
+        if _name == 'button_get_latest_price_active':
+            trade = self._get_selected_trade(active_trade = True)
+        elif _name == 'button_get_latest_price_simulation':
+            trade = self._get_selected_trade(active_trade = False)
+        
         if trade:
             trade.get_latest_price()
-            self._update_table()
+            self._update_tables()
             self._notify_change_observer()
     
-    def _update_table(self):
-        self.table_model_trading.layoutChanged.emit()
-        for i in range(self.table_model_trading.columnCount(None)):
-            self.ui_mainbody.table_view_trading.resizeColumnToContents(i)
+    def _update_tables(self):
+        self.table_model_trading_active.layoutChanged.emit()
+        for i in range(self.table_model_trading_active.columnCount(None)):
+            self.ui_mainbody.table_view_trading_active.resizeColumnToContents(i)
+        self.table_model_trading_simulation.layoutChanged.emit()
+        for i in range(self.table_model_trading_simulation.columnCount(None)):
+            self.ui_mainbody.table_view_trading_simulation.resizeColumnToContents(i)
     
     def _update_text_all_portfolio_specific_values(self):
         self.ui_mainbody.label_portfolio_value.setText(
@@ -211,30 +296,36 @@ class Workarea:
 class TradingTableModel(QtCore.QAbstractTableModel):
     
     COLUMN_ORDER_AND_DISPLAY = {
-             0: ['is_active', 'Status', '{}'],
-             1: ['name', 'Name', '{}'],
-             2: ['isin', 'ISIN', '{}'],
-             3: ['number_of_shares', '# Shares', '{:d}'],
-             4: ['latest_price', 'Latest price', '{:.2f} €'],
-             5: ['entry_price', 'Entry price', '{:.2f} €'],
-             6: ['protective_stop', 'Protective stop', '{:.2f} €'],
-             7: ['target_price', 'Target price', '{:.2f} €'],
+             0: ['name', 'Name', '{}'],
+             1: ['isin', 'ISIN', '{}'],
+             2: ['latest_price', 'Latest price', '{:.2f} €'],
+             3: ['entry_price', 'Entry price', '{:.2f} €'],
+             4: ['profit_loss', 'Profit/loss', '{:.2f} €'],
+             5: ['protective_stop', 'Protective stop', '{:.2f} €'],
+             6: ['target_price', 'Target price', '{:.2f} €'],
+             7: ['number_of_shares', '# Shares', '{:d}'],
              8: ['trade_reward', 'Reward', '{:.2f} €'],
              9: ['trade_risk', 'Risk', '{:.2f} €'],
-            10: ['profit_loss', 'Profit/loss', '{:.2f} €'],
-            11: ['reward_risk_ratio', 'Reward risk ratio', '{:,.2f}'],
-            12: ['days_left_earnings', 'Days until earnings', '{:d}'],
-            13: ['days_left_dividend', 'Days until dividend', '{:d}']
+            10: ['reward_risk_ratio', 'Reward risk ratio', '{:,.2f}'],
+            11: ['days_left_earnings', 'Days until earnings', '{:d}'],
+            12: ['days_left_dividend', 'Days until dividend', '{:d}']
             }
     
-    def __init__(self, trading_portfolio):
+    USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
+    
+    def __init__(self, trading_portfolio, is_active_status = True):
         super(TradingTableModel, self).__init__()
         self.trading_portfolio = trading_portfolio
+        self.is_active_status = is_active_status
     
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
-            trade = self.trading_portfolio.trades[index.row()]
-            col = index.column()
+            trade = [
+                t for t in self.trading_portfolio.trades
+                if t.is_active == self.is_active_status
+                ][index.row()]
+            
+            col = self.USED_COLUMNS[index.column()]
             
             attr_name = self.COLUMN_ORDER_AND_DISPLAY[col][0]
             attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
@@ -246,8 +337,6 @@ class TradingTableModel(QtCore.QAbstractTableModel):
             else:
                 value_str = 'N/A'
             
-            if attr_name == 'is_active':
-                value_str = 'A' if value == True else 'S'
             return value_str
         
         if role == QtCore.Qt.TextAlignmentRole:
@@ -259,19 +348,26 @@ class TradingTableModel(QtCore.QAbstractTableModel):
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
         
         if role == QtCore.Qt.UserRole:
-            trade = self.trading_portfolio.trades[index.row()]
+            trade = [
+                t for t in self.trading_portfolio.trades
+                if t.is_active == self.is_active_status
+                ][index.row()]
             return trade
     
     def rowCount(self, index):
-        return len(self.trading_portfolio.trades)
+        return sum(1 for t in self.trading_portfolio.trades
+                   if t.is_active == self.is_active_status)
     
     def columnCount(self, index):
-        return len(self.COLUMN_ORDER_AND_DISPLAY)
+        return len(self.USED_COLUMNS)
     
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
-                header_str = self.COLUMN_ORDER_AND_DISPLAY[section][1]
+                _s = self.USED_COLUMNS[section]
+                header_str = '  {}  '.format(
+                    self.COLUMN_ORDER_AND_DISPLAY[_s][1]
+                    )
                 return header_str
 
 class DialogPortfolio(QtWidgets.QDialog):
@@ -608,6 +704,56 @@ class DialogTrade(QtWidgets.QDialog):
             self.trading_portfolio.close_trade(
                 self.trade, sell_price, date_trade_closed
                 )
+        
+        self.accepted = True
+        self.close()
+
+class DialogTableSettings(QtWidgets.QDialog):
+    def __init__(self, all_column_data, used_columns):
+        super(DialogTableSettings, self).__init__()
+        self.all_column_data = all_column_data
+        
+        self.id_to_name = {i: v[1] for i, v in all_column_data.items()}
+        self.name_to_id = {v[1]: i for i, v in all_column_data.items()}
+        
+        self.used_columns = used_columns
+        self.accepted = False
+        
+        self.setup_gui()
+    
+    def setup_gui(self):
+        self.ui_dialog = Ui_Dialog_Table_Settings()
+        self.ui_dialog.setupUi(self)
+        
+        self.ui_dialog.button_reset_to_default.clicked.connect(
+            self.reset_used_columns_to_default
+            )
+        
+        all_header_displayed = []
+        all_header_not_displayed = []
+        for i, v in self.id_to_name.items():
+            if i in self.used_columns:
+                all_header_displayed.append(v)
+            else:
+                all_header_not_displayed.append(v)
+            
+        self.ui_dialog.list_displayed.addItems(all_header_displayed)
+        self.ui_dialog.list_not_displayed.addItems(all_header_not_displayed)
+    
+    def reset_used_columns_to_default(self):
+        self.used_columns = list(self.all_column_data.keys())
+        self.ui_dialog.list_displayed.clear()
+        self.ui_dialog.list_displayed.addItems(
+            [self.id_to_name[i] for i in self.used_columns]
+            )
+        self.ui_dialog.list_not_displayed.clear()
+        self.ui_dialog.list_not_displayed.addItems([])
+    
+    def accept(self):
+        self.used_columns = [
+            self.name_to_id[self.ui_dialog.list_displayed.item(i).text()] \
+                for i in range(self.ui_dialog.list_displayed.count())
+                ]
         
         self.accepted = True
         self.close()
