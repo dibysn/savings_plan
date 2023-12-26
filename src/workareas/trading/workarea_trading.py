@@ -127,10 +127,14 @@ class Workarea:
         return 'Trading'
     
     def get_json_data_for_saving(self):
-        return self.trading_portfolio.get_json_data_for_saving()
+        return {
+            'Columns': TradingTableModel.USED_COLUMNS,
+            'Portfolio': self.trading_portfolio.get_json_data_for_saving()
+            }
     
     def load_from_json_data(self, data):
-        _trading_portfolio = TradingPortfolio.load_from_json_data(data)
+        TradingTableModel.USED_COLUMNS = data['Columns']
+        _trading_portfolio = TradingPortfolio.load_from_json_data(data['Portfolio'])
         
         self.trading_portfolio = _trading_portfolio
         self.table_model_trading_active.trading_portfolio = self.trading_portfolio
@@ -211,6 +215,7 @@ class Workarea:
         if dialog_table_settings.accepted:
             TradingTableModel.USED_COLUMNS = dialog_table_settings.used_columns
             self._update_tables()
+            self._notify_change_observer()
     
     def delete_trade(self):
         trade = None
