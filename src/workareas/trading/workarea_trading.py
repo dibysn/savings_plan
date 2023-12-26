@@ -10,6 +10,13 @@ from src.workareas.trading.ui_dialog_table_settings import Ui_Dialog as Ui_Dialo
 
 from src.workareas.trading.model.tradingmodel import TradingPortfolio, Trade
 
+def display_error(err):
+    msg_box = QtWidgets.QMessageBox()
+    msg_box.setIcon(QtWidgets.QMessageBox.Critical)
+    msg_box.setText(str(err))
+    msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    msg_box.exec()
+
 class IconWorkarea:
     def __init__(self):
         self.icon = QtGui.QIcon()
@@ -133,8 +140,12 @@ class Workarea:
             }
     
     def load_from_json_data(self, data):
-        TradingTableModel.USED_COLUMNS = data['Columns']
-        _trading_portfolio = TradingPortfolio.load_from_json_data(data['Portfolio'])
+        try:
+            _trading_portfolio = TradingPortfolio.load_from_json_data(data['Portfolio'])
+            TradingTableModel.USED_COLUMNS = data['Columns']
+        except Exception as err:
+            display_error(err)
+            return
         
         self.trading_portfolio = _trading_portfolio
         self.table_model_trading_active.trading_portfolio = self.trading_portfolio
@@ -195,6 +206,9 @@ class Workarea:
             trade = self._get_selected_trade(active_trade = True)
         elif _name in ['button_edit_trade_simulation', 'table_view_trading_simulation']:
             trade = self._get_selected_trade(active_trade = False)
+        else:
+            display_error(Exception('Editing trade not possible'))
+            return
         
         if trade:
             dialog_trade = DialogTrade(
@@ -224,6 +238,9 @@ class Workarea:
             trade = self._get_selected_trade(active_trade = True)
         elif _name == 'button_delete_trade_simulation':
             trade = self._get_selected_trade(active_trade = False)
+        else:
+            display_error(Exception('Deleting trade not possible'))
+            return
         
         if trade:
             message = ('Do you really want to delete trade\n'
@@ -266,9 +283,16 @@ class Workarea:
             trade = self._get_selected_trade(active_trade = True)
         elif _name == 'button_get_latest_price_simulation':
             trade = self._get_selected_trade(active_trade = False)
+        else:
+            display_error(Exception('Updating latest price not possible'))
+            return
         
         if trade:
-            trade.get_latest_price()
+            try:
+                trade.get_latest_price()
+            except Exception as err:
+                display_error(err)
+                return
             self._update_tables()
             self._notify_change_observer()
     
@@ -484,7 +508,7 @@ class DialogPortfolio(QtWidgets.QDialog):
                 )
             if button == QtWidgets.QMessageBox.Cancel:
                 self.close()
-            
+
             self.trading_portfolio = TradingPortfolio(
                 initial_deposit, allowed_risk_trade, allowed_risk_portfolio, []
                 )
