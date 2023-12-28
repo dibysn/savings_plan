@@ -10,10 +10,10 @@ To start the aplication just run `savings_plan_app.py`.
 
 <ins>Area 1</ins>\
 The following functions can be performed in this area:
-* Show/hide the input form.
-* Creating a new simulation.
-* Open an existing simulation.
-* Save the current simulation.
+* Show/hide the left pane.
+* Creating a new savings plan.
+* Open an existing savings plan.
+* Save the current savings plan.
 
 <ins>Area 2</ins>\
 In this area different workspaces can be selected.
