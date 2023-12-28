@@ -1,19 +1,10 @@
 # savings_plan
 ## Summary
-You can use this application if you want to simulate how much money you need to invest on a monthy/yearly basis to be able to withdraw a fixed amount every month from this savings after you have retired.
+This application can be used to simulate and track financial investments. It consists of different workareas that can help with different aspects/strategies of financial investments. The individual workareas can be selected using the icons on the left.
 
-This tool provides an environment for simulating the growth of such an investment plan mainly given the following parameters:
-* The time you have for saving.
-* The expected yearly rate of return for your investment.
-* The expected yearly rate of inflation.
-* The expected time you have for dissaving.
-* The amount of money you want to withdraw monthly after the savings phase has finished.
-
-The application does not take into account the rate of inflation for the dissaving phase.
+For more information about each individual workarea see [https://github.com/dibysn/savings_plan/wiki](https://github.com/dibysn/savings_plan/wiki).
 
 To start the aplication just run `savings_plan_app.py`.
-
-For more information see [https://github.com/dibysn/savings_plan/wiki](https://github.com/dibysn/savings_plan/wiki).
 
 ![savings_plan](misc/savings_plan_screenshot_01.png)
 
