@@ -753,6 +753,7 @@ class DialogTableSettings(QtWidgets.QDialog):
     def setup_gui(self):
         self.ui_dialog = Ui_Dialog_Table_Settings()
         self.ui_dialog.setupUi(self)
+        self.setWindowTitle('Settings')
         
         self.ui_dialog.button_reset_to_default.clicked.connect(
             self.reset_used_columns_to_default
