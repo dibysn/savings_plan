@@ -6,7 +6,7 @@ For more information about each individual workspaces see [https://github.com/di
 
 To start the aplication just run `savings_plan_app.py`.
 
-![savings_plan](misc/savings_plan_screenshot_01.png)
+<img src="misc/savings_plan_screenshot_01.png" width="800">
 
 <ins>Area 1</ins>\
 The following functions can be performed in this area:
