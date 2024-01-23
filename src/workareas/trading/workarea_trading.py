@@ -325,8 +325,8 @@ class Workarea:
 class TradingTableModel(QtCore.QAbstractTableModel):
     
     COLUMN_ORDER_AND_DISPLAY = {
-             0: ['name', 'Name', '{}'],
-             1: ['isin', 'ISIN', '{}'],
+             0: ['name', 'Name', ' {} '],
+             1: ['isin', 'ISIN', ' {} '],
              2: ['latest_price', 'Latest price', '{:.2f} €'],
              3: ['entry_price', 'Entry price', '{:.2f} €'],
              4: ['profit_loss', 'Profit/loss', '{:.2f} €'],
