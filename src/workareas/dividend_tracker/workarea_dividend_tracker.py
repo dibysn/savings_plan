@@ -544,6 +544,54 @@ class DialogBooking(QtWidgets.QDialog):
         shadow.setColor(QtGui.QColor(0, 0, 0, 255))
         self.ui_dialog.frame_header.setGraphicsEffect(shadow)
         
+        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
+            lambda v: self.ui_dialog.total_amount.setText(
+                '{:.2f} €'.format(v * self.ui_dialog.amount_per_share.value())
+                )
+            )
+        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
+            lambda v: self.ui_dialog.total_amount.setText(
+                '{:.2f} €'.format(self.ui_dialog.number_of_shares.value() * v)
+                )
+            )
+        
+        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
+            lambda v: self.ui_dialog.total_cost.setText(
+                '{:.2f} €'.format(
+                    v * self.ui_dialog.amount_per_share.value() + \
+                    self.ui_dialog.fee.value() + \
+                    self.ui_dialog.tax.value()
+                    )
+                )
+            )
+        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
+            lambda v: self.ui_dialog.total_cost.setText(
+                '{:.2f} €'.format(
+                    self.ui_dialog.number_of_shares.value() * v + \
+                    self.ui_dialog.fee.value() + \
+                    self.ui_dialog.tax.value()
+                    )
+                )
+            )
+        self.ui_dialog.fee.valueChanged['double'].connect(
+            lambda v: self.ui_dialog.total_cost.setText(
+                '{:.2f} €'.format(
+                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
+                    v + \
+                    self.ui_dialog.tax.value()
+                    )
+                )
+            )
+        self.ui_dialog.tax.valueChanged['double'].connect(
+            lambda v: self.ui_dialog.total_cost.setText(
+                '{:.2f} €'.format(
+                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
+                    self.ui_dialog.fee.value() + \
+                    v
+                    )
+                )
+            )
+    
     def setup_gui_new(self):
         self._setup_gui()
         self.setWindowTitle('New')
@@ -554,13 +602,32 @@ class DialogBooking(QtWidgets.QDialog):
         for booking_type in ['Buy', 'Sell', 'Dividend']:
             self.ui_dialog.combo_box_type.addItem(booking_type)
         
+        s = self.ui_dialog.combo_box_share.currentData()
+        self.ui_dialog.label_name.setText('  {}'.format(s.name))
+        self.ui_dialog.label_isin.setText('  {}'.format(s.isin))
+        
         def fill_name_isin_info(i):
             s = self.ui_dialog.combo_box_share.itemData(i)
-            self.ui_dialog.line_edit_name.setText(' {}'.format(s.name))
-            self.ui_dialog.line_edit_isin.setText(' {}'.format(s.isin))
+            self.ui_dialog.label_name.setText('  {}'.format(s.name))
+            self.ui_dialog.label_isin.setText('  {}'.format(s.isin))
         
         self.ui_dialog.combo_box_share.currentIndexChanged.connect(
             fill_name_isin_info
+            )
+        
+        self.ui_dialog.total_amount.setText(
+            '{:.2f} €'.format(
+                self.ui_dialog.number_of_shares.value() * \
+                self.ui_dialog.amount_per_share.value()
+                )
+            )
+        self.ui_dialog.total_cost.setText(
+            '{:.2f} €'.format(
+                self.ui_dialog.number_of_shares.value() * \
+                self.ui_dialog.amount_per_share.value() + \
+                self.ui_dialog.fee.value() + \
+                self.ui_dialog.tax.value()
+                )
             )
     
     def setup_gui_edit(self):
@@ -568,15 +635,29 @@ class DialogBooking(QtWidgets.QDialog):
         self.setWindowTitle('Edit')
         
         self.ui_dialog.combo_box_share.addItem(' {}'.format(self.share.name))
-        self.ui_dialog.line_edit_name.setText(self.share.name)
-        self.ui_dialog.line_edit_isin.setText(self.share.isin)
+        self.ui_dialog.label_name.setText('  {}'.format(self.share.name))
+        self.ui_dialog.label_isin.setText('  {}'.format(self.share.isin))
         self.ui_dialog.combo_box_type.addItem(self.booking.type)
         self.ui_dialog.date_booking.setDate(self.booking.date)
         self.ui_dialog.number_of_shares.setValue(self.booking.number_of_shares)
         self.ui_dialog.amount_per_share.setValue(self.booking.amount_per_share)
-        self.ui_dialog.total_amount.setValue(self.booking.amount)
+        self.ui_dialog.total_amount.setText(
+            '{:.2f} €'.format(
+                self.ui_dialog.number_of_shares.value() * \
+                self.ui_dialog.amount_per_share.value()
+                )
+            )
         self.ui_dialog.fee.setValue(self.booking.fee)
         self.ui_dialog.tax.setValue(self.booking.tax)
+        
+        self.ui_dialog.total_cost.setText(
+            '{:.2f} €'.format(
+                self.ui_dialog.number_of_shares.value() * \
+                self.ui_dialog.amount_per_share.value() + \
+                self.ui_dialog.fee.value() + \
+                self.ui_dialog.tax.value()
+                )
+            )
     
     def accept(self):
         

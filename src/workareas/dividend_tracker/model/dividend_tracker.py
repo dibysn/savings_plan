@@ -120,6 +120,7 @@ class Share:
         order.amount = new_amount_per_share * new_number_of_shares
         order.fee = new_fee
         order.tax = new_tax
+        order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
     
     def delete_buy_order(self, order):
         try:
@@ -145,6 +146,7 @@ class Share:
         order.amount = new_amount_per_share * new_number_of_shares
         order.fee = new_fee
         order.tax = new_tax
+        order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
         
     def delete_sell_order(self, order):
         try:
@@ -169,6 +171,7 @@ class Share:
         order.amount = new_amount_per_share * new_number_of_shares
         order.fee = new_fee
         order.tax = new_tax
+        order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
     
     def delete_dividend(self, dividend):
         try:
@@ -247,9 +250,9 @@ class Share:
             
             # Build list of all current shares in the portfolio
             buy = [
-                Order(None, None, None, None,
+                Order(None, None, None, 0,
                       n_buy - n_sell, self.buy_orders[n].amount_per_share,
-                      None, None)
+                      0, 0)
                 ]
             buy = buy + self.buy_orders[n+1:]
             
@@ -353,6 +356,7 @@ class Order:
         self.amount = amount_per_share * number_of_shares
         self.fee = fee
         self.tax = tax
+        self.total_cost = self.amount + fee + tax
 
 class Dividend:
     
@@ -367,6 +371,7 @@ class Dividend:
         self.amount = amount_per_share * number_of_shares
         self.fee = fee
         self.tax = tax
+        self.total_cost = self.amount + fee + tax
 
 if __name__ == '__main__':
     s1 = Share('DE0012331', 'ShareA')
