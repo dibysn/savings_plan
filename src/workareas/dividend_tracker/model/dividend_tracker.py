@@ -5,25 +5,44 @@ import math
 
 class Portfolio:
     
-    def __init__(self):
-        self.all_shares = []
+    def __init__(self, all_shares = None):
+        self.all_shares = all_shares if all_shares != None else []
+    
+    def get_json_data_for_saving(self):
+        _d = {
+            'shares': [s.get_json_data_for_saving() for s in self.all_shares]
+            }
+        return _d
+    
+    @classmethod
+    def load_from_json_data(cls, data):
+        all_shares = [Share.load_from_json_data(s) for s in data['shares']]
+        p = cls(all_shares = all_shares)
+        return p
     
     def add_share(self, share):
         if share.isin in [s.isin for s in self.all_shares]:
             raise Exception(
                 'Share with ISIN "{}" already in portfolio'.format(share.isin)
                 )
-            return
         self.all_shares.append(share)
     
     def update_share(self, share, new_name, new_isin):
-        if new_isin != share.isin and new_isin in [s.isin for s in self.all_shares]:
+        
+        _new_name = new_name.strip()
+        _new_isin = new_isin.strip()
+        
+        if _new_isin != share.isin and _new_isin in [s.isin for s in self.all_shares]:
             raise Exception(
                 'Share with ISIN "{}" already in portfolio'.format(share.isin)
                 )
-            return
-        share.name = new_name
-        share.isin = new_isin
+        if _new_name == '':
+            raise Exception('Share name cannot be empty')
+        
+        if _new_isin == '':
+            raise Exception('Share ISIN cannot be empty')
+        share.name = _new_name
+        share.isin = _new_isin
     
     def remove_share(self, share):
         try:
@@ -99,9 +118,76 @@ class Share:
         self.isin = isin.strip()
         self.name = name.strip()
         
+        if self.name == '':
+            raise Exception('Share name cannot be empty')
+        
+        if self.isin == '':
+            raise Exception('Share ISIN cannot be empty')
+        
         self.buy_orders = []
         self.sell_orders = []
         self.dividend_payments = []
+    
+    def get_json_data_for_saving(self):
+        _buy = [
+            {
+                'order_type': 'Buy',
+                'name': b.name,
+                'isin': b.isin,
+                'date': b.date.isoformat(),
+                'number_of_shares': b.number_of_shares,
+                'amount_per_share': b.amount_per_share,
+                'fee': b.fee,
+                'tax': b.tax
+             }
+            for b in self.buy_orders
+            ]
+        _sell = [
+            {
+                'order_type': 'Sell',
+                'name': b.name,
+                'isin': b.isin,
+                'date': b.date.isoformat(),
+                'number_of_shares': b.number_of_shares,
+                'amount_per_share': b.amount_per_share,
+                'fee': b.fee,
+                'tax': b.tax
+             }
+            for b in self.sell_orders
+            ]
+        _dividend = [
+            {
+                'order_type': 'Dividend',
+                'name': b.name,
+                'isin': b.isin,
+                'date': b.date.isoformat(),
+                'number_of_shares': b.number_of_shares,
+                'amount_per_share': b.amount_per_share,
+                'fee': b.fee,
+                'tax': b.tax
+             }
+            for b in self.dividend_payments
+            ]
+        
+        _d = {
+            'name': self.name,
+            'isin': self.isin,
+            'orders': _buy + _sell + _dividend
+            }
+        return _d
+    
+    @classmethod
+    def load_from_json_data(cls, data):
+        
+        s = cls(data['name'], data['isin'])
+        
+        for _o in data['orders']:
+            s.create_booking(
+                _o['order_type'], dt.fromisoformat(_o['date']),
+                _o['number_of_shares'], _o['amount_per_share'],
+                _o['fee'], _o['tax']
+                )
+        return s
     
     def create_buy_order(self, date, number_of_shares,
                          amount_per_share, fee, tax):
@@ -130,7 +216,8 @@ class Share:
     
     def create_sell_order(self, date, number_of_shares,
                           amount_per_share, fee, tax):
-        assert(self.number_of_shares >= number_of_shares)
+        if self.number_of_shares < number_of_shares:
+            raise Exception('Not enough shares available')
         
         o = Order(
             'Sell', self.name, self.isin, date, number_of_shares,

@@ -6,6 +6,7 @@ from src.workareas.dividend_tracker.ui_mainbody_dividend_tracker import Ui_Form 
 from src.workareas.dividend_tracker.ui_slidemenu_dividend_tracker import Ui_Form as Ui_Form_Slidemenu
 from src.workareas.dividend_tracker.ui_dialog_share import Ui_Dialog as Ui_Dialog_Share
 from src.workareas.dividend_tracker.ui_dialog_booking import Ui_Dialog as Ui_Dialog_Booking
+from src.workareas.dividend_tracker.ui_dialog_table_settings import Ui_Dialog as Ui_Dialog_Table_Settings
 
 from src.workareas.dividend_tracker.model.dividend_tracker import Share, Portfolio
 
@@ -146,9 +147,7 @@ class Workarea:
         
         self._update_tables()
         
-        self.ui_slidemenu.button_new_share.clicked.connect(
-            self.open_dialog_new_share
-            )
+        
         self.ui_mainbody.button_edit_share.clicked.connect(
             self.open_dialog_edit_share
             )
@@ -158,9 +157,8 @@ class Workarea:
         self.ui_mainbody.button_delete_share.clicked.connect(
             self.delete_share
             )
-        
-        self.ui_slidemenu.button_new_booking.clicked.connect(
-            self.open_dialog_new_booking
+        self.ui_mainbody.button_table_settings_share.clicked.connect(
+            self.open_dialog_table_settings_share
             )
         self.ui_mainbody.button_edit_booking.clicked.connect(
             self.open_dialog_edit_booking
@@ -170,6 +168,16 @@ class Workarea:
             )
         self.ui_mainbody.button_delete_booking.clicked.connect(
             self.delete_booking
+            )
+        self.ui_mainbody.button_table_settings_booking.clicked.connect(
+            self.open_dialog_table_settings_booking
+            )
+        
+        self.ui_slidemenu.button_new_share.clicked.connect(
+            self.open_dialog_new_share
+            )
+        self.ui_slidemenu.button_new_booking.clicked.connect(
+            self.open_dialog_new_booking
             )
     
     def register_change_observer(self, change_observer_callback):
@@ -183,13 +191,40 @@ class Workarea:
         return 'Dividend tracker'
     
     def get_json_data_for_saving(self):
-        raise NotImplementedError()
+        return {
+            'Columns share': ShareTableModel.USED_COLUMNS,
+            'Columns booking': BookingsTableModel.USED_COLUMNS,
+            'Portfolio': self.dividend_portfolio.get_json_data_for_saving()
+            }
     
     def load_from_json_data(self, data):
-        raise NotImplementedError()
+        try:
+            _dividend_portfolio = Portfolio.load_from_json_data(data['Portfolio'])
+            ShareTableModel.USED_COLUMNS = data['Columns share']
+            BookingsTableModel.USED_COLUMNS = data['Columns booking']
+        except Exception as err:
+            display_error(err)
+            return
+        
+        self.dividend_portfolio = _dividend_portfolio
+        self.table_model_all_bookings.dividend_portfolio = self.dividend_portfolio
+        self.table_model_all_shares.dividend_portfolio = self.dividend_portfolio
+        
+        self._update_tables()
     
     def set_default_values(self):
-        raise NotImplementedError()
+        self.dividend_portfolio = Portfolio()
+        self.table_model_all_bookings.dividend_portfolio = self.dividend_portfolio
+        self.table_model_all_shares.dividend_portfolio = self.dividend_portfolio
+        ShareTableModel.USED_COLUMNS = list(
+            ShareTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            )
+        BookingsTableModel.USED_COLUMNS = list(
+            BookingsTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            )
+        
+        self._update_tables()
+        self._notify_change_observer()
     
     def _update_tables(self):
         self.table_model_all_bookings.layoutChanged.emit()
@@ -282,6 +317,28 @@ class Workarea:
             if dialog_booking.accepted:
                 self._update_tables()
                 self._notify_change_observer()
+    
+    def open_dialog_table_settings_share(self):
+        dialog_table_settings = DialogTableSettings(
+            ShareTableModel.COLUMN_ORDER_AND_DISPLAY,
+            ShareTableModel.USED_COLUMNS
+            )
+        dialog_table_settings.exec()
+        if dialog_table_settings.accepted:
+            ShareTableModel.USED_COLUMNS = dialog_table_settings.used_columns
+            self._update_tables()
+            self._notify_change_observer()
+        
+    def open_dialog_table_settings_booking(self):
+        dialog_table_settings = DialogTableSettings(
+            BookingsTableModel.COLUMN_ORDER_AND_DISPLAY,
+            BookingsTableModel.USED_COLUMNS
+            )
+        dialog_table_settings.exec()
+        if dialog_table_settings.accepted:
+            BookingsTableModel.USED_COLUMNS = dialog_table_settings.used_columns
+            self._update_tables()
+            self._notify_change_observer()
     
     def delete_booking(self):
         share, booking = self._get_selected_booking()
@@ -669,10 +726,10 @@ class DialogBooking(QtWidgets.QDialog):
         
         try:
             if self.is_new_booking:
-                share = self.ui_dialog.combo_box_shareitemData(
+                share = self.ui_dialog.combo_box_share.itemData(
                     self.ui_dialog.combo_box_share.currentIndex()
                     )
-                booking_type = self.ui_dialog.combo_box_share.currentText()
+                booking_type = self.ui_dialog.combo_box_type.currentText()
                 share.create_booking(
                     booking_type, new_date, new_number_of_shares,
                     new_amount_per_share, new_fee, new_tax
@@ -689,6 +746,56 @@ class DialogBooking(QtWidgets.QDialog):
         self.accepted = True
         self.close()
 
+class DialogTableSettings(QtWidgets.QDialog):
+    def __init__(self, all_column_data, used_columns):
+        super(DialogTableSettings, self).__init__()
+        self.all_column_data = all_column_data
+        
+        self.id_to_name = {i: v[1] for i, v in all_column_data.items()}
+        self.name_to_id = {v[1]: i for i, v in all_column_data.items()}
+        
+        self.used_columns = used_columns
+        self.accepted = False
+        
+        self.setup_gui()
+    
+    def setup_gui(self):
+        self.ui_dialog = Ui_Dialog_Table_Settings()
+        self.ui_dialog.setupUi(self)
+        self.setWindowTitle('Settings')
+        
+        self.ui_dialog.button_reset_to_default.clicked.connect(
+            self.reset_used_columns_to_default
+            )
+        
+        all_header_displayed = []
+        all_header_not_displayed = []
+        for i, v in self.id_to_name.items():
+            if i in self.used_columns:
+                all_header_displayed.append(v)
+            else:
+                all_header_not_displayed.append(v)
+            
+        self.ui_dialog.list_displayed.addItems(all_header_displayed)
+        self.ui_dialog.list_not_displayed.addItems(all_header_not_displayed)
+    
+    def reset_used_columns_to_default(self):
+        self.used_columns = list(self.all_column_data.keys())
+        self.ui_dialog.list_displayed.clear()
+        self.ui_dialog.list_displayed.addItems(
+            [self.id_to_name[i] for i in self.used_columns]
+            )
+        self.ui_dialog.list_not_displayed.clear()
+        self.ui_dialog.list_not_displayed.addItems([])
+    
+    def accept(self):
+        self.used_columns = [
+            self.name_to_id[self.ui_dialog.list_displayed.item(i).text()] \
+                for i in range(self.ui_dialog.list_displayed.count())
+                ]
+        
+        self.accepted = True
+        self.close()
 
 def get_workarea_icon_and_widgets():
     icon = IconWorkarea().icon
