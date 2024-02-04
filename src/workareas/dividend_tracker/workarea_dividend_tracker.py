@@ -173,6 +173,9 @@ class Workarea:
             self.open_dialog_table_settings_booking
             )
         
+        self.ui_slidemenu.button_new_portfolio.clicked.connect(
+            self.new_dividend_portfolio
+            )
         self.ui_slidemenu.button_new_share.clicked.connect(
             self.open_dialog_new_share
             )
@@ -242,6 +245,21 @@ class Workarea:
             index = self.table_model_all_shares.createIndex(row, 0)
             share = self.table_model_all_shares.data(index, QtCore.Qt.UserRole)
         return share
+    
+    def new_dividend_portfolio(self):
+        message = ('If you creeate a new dividend portfolio, '
+                   'all data of the current dividend portfolio '
+                   'will be lost.\n\n'
+                   'Do you want to continue?')
+            
+        button = QtWidgets.QMessageBox.question(
+            self.slidemenu, 'Dividend Portfolio - New', message,
+            QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes
+            )
+        if button == QtWidgets.QMessageBox.Cancel:
+            return
+        
+        self.set_default_values()
     
     def open_dialog_new_share(self):
         dialog_share = DialogShare(

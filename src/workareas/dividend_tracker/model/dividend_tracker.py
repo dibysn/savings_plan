@@ -191,7 +191,6 @@ class Share:
     
     def create_buy_order(self, date, number_of_shares,
                          amount_per_share, fee, tax):
-        
         o = Order(
             'Buy', self.name, self.isin, date, number_of_shares,
             amount_per_share, fee, tax
@@ -200,6 +199,8 @@ class Share:
     
     def update_buy_order(self, order, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
+        if self.number_of_shares < order.number_of_shares - new_number_of_shares:
+            raise Exception('Not enough shares available')
         order.date = new_date
         order.number_of_shares = new_number_of_shares
         order.amount_per_share = new_amount_per_share
@@ -209,6 +210,8 @@ class Share:
         order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
     
     def delete_buy_order(self, order):
+        if self.number_of_shares < order.number_of_shares:
+            raise Exception('Not enough shares available')
         try:
             self.buy_orders.remove(order)
         except:
@@ -218,7 +221,6 @@ class Share:
                           amount_per_share, fee, tax):
         if self.number_of_shares < number_of_shares:
             raise Exception('Not enough shares available')
-        
         o = Order(
             'Sell', self.name, self.isin, date, number_of_shares,
             amount_per_share, fee, tax
@@ -227,6 +229,8 @@ class Share:
     
     def update_sell_order(self, order, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
+        if self.number_of_shares < new_number_of_shares - order.number_of_shares:
+            raise Exception('Not enough shares available')
         order.date = new_date
         order.number_of_shares = new_number_of_shares
         order.amount_per_share = new_amount_per_share
