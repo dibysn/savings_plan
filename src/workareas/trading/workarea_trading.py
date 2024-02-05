@@ -329,7 +329,7 @@ class TradingTableModel(QtCore.QAbstractTableModel):
              1: ['isin', 'ISIN', ' {} '],
              2: ['latest_price', 'Latest price', '{:.2f} €'],
              3: ['entry_price', 'Entry price', '{:.2f} €'],
-             4: ['profit_loss', 'Profit/loss', '{:.2f} €'],
+             4: ['profit_loss', 'P/L', '{:.2f} €'],
              5: ['protective_stop', 'Protective stop', '{:.2f} €'],
              6: ['target_price', 'Target price', '{:.2f} €'],
              7: ['number_of_shares', '# Shares', '{:d}'],

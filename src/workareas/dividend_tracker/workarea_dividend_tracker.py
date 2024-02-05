@@ -479,10 +479,10 @@ class ShareTableModel(QtCore.QAbstractTableModel):
         1: ['isin', 'ISIN', ' {} '],
         2: ['number_of_shares', '# Shares', ' {:d}'],
         3: ['acquisition_price', 'Acquisition price', ' {:.2f} €'],
-        4: ['total_investment', 'Total investment', ' {:.2f} €'],
-        5: ['profit_loss', 'Profit/loss', ' {:.2f} €'],
+        4: ['tied_capital', 'Tied capital', ' {:.2f} €'],
+        5: ['realized_profit_loss', 'Realized P/L', ' {:.2f} €'],
         6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:.2f} %'],
-        7: ['dividend_return_on_investment_12_months', 'ROI (12m)', ' {:.2f} %']
+        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:.2f} %']
         }
     
     USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())

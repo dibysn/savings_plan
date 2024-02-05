@@ -51,41 +51,45 @@ class Portfolio:
             raise Exception('Share does not exist')
     
     @property
-    def total_investment(self):
-        return sum(s.total_investment for s in self.all_shares)
+    def tied_capital(self):
+        return sum(s.tied_capital for s in self.all_shares)
     
     @property
-    def profit_loss(self):
-        return sum(s.profit_loss for s in self.all_shares)
+    def realized_profit_loss(self):
+        return sum(s.realized_profit_loss for s in self.all_shares)
     
     @property
     def yield_on_cost_12_months(self):
-        if self.total_investment == 0.0:
-            yoc = 0.0
-        else:
-            yoc = sum(
-                s.yield_on_cost_12_months * s.total_investment
-                for s in self.all_shares
-                ) / self.total_investment
-        return yoc
-    
-    @property
-    def dividend_return_on_investment_12_months(self):
-        w_ret = sum(
-            s.dividend_return_on_investment_12_months * s.total_investment \
-                for s in self.all_shares
+        ret = sum(
+            s.dividends_last_12_months * s.number_of_shares \
+            for s in self.all_shares
+            )
+        acquisition_cost = sum(
+            s.acquisition_price * s.number_of_shares \
+            for s in self.all_shares
             )
         
-        if w_ret == 0.0:
+        if ret == 0.0:
+            yoc = 0.0
+        else:
+            yoc = ret / acquisition_cost
+        return yoc * 100.0
+    
+    @property
+    def dividend_return_on_tied_capital_12_months(self):
+        ret = sum(
+            s.dividends_last_12_months * s.number_of_shares \
+            for s in self.all_shares
+            )
+        if ret == 0.0:
             return 0.0
         
         try:
-            d_roi = max(w_ret / self.total_investment, 0.0)
+            d_rotc = ret / max(self.tied_capital, 0.0)
         except ZeroDivisionError:
-            d_roi = math.inf
-        
-        return d_roi
-    
+            d_rotc = math.inf
+            
+        return d_rotc * 100.0
     
     def get_total_share_fee(self, start_date, end_date):
         return sum(
@@ -353,14 +357,14 @@ class Share:
         return p
     
     @property
-    def total_investment(self):
+    def tied_capital(self):
         vb = sum(b.number_of_shares * b.amount_per_share for b in self.buy_orders)
         vs = sum(s.number_of_shares * s.amount_per_share for s in self.sell_orders)
         return vb - vs
     
     @property
-    def profit_loss(self):
-        return self.number_of_shares * self.acquisition_price - self.total_investment
+    def realized_profit_loss(self):
+        return self.number_of_shares * self.acquisition_price - self.tied_capital
     
     def get_total_share_fee(self, start_date, end_date):
         fb = sum(
@@ -389,11 +393,7 @@ class Share:
         if self.number_of_shares == 0:
             yoc = 0.0
         else:
-            dividends_last_12_months = sum(
-                d.amount_per_share for d in self.dividend_payments
-                if (dt.today() - d.date).days < 365
-                )
-            yoc = dividends_last_12_months / self.acquisition_price
+            yoc = self.dividends_last_12_months / self.acquisition_price
         return yoc * 100.0
     
     @property
@@ -404,17 +404,17 @@ class Share:
             )
     
     @property
-    def dividend_return_on_investment_12_months(self):
+    def dividend_return_on_tied_capital_12_months(self):
         ret = self.dividends_last_12_months * self.number_of_shares
         if ret == 0.0:
             return 0.0
         
         try:
-            d_roi = max(ret / self.total_investment, 0.0)
+            d_rotc = ret / max(self.tied_capital, 0.0)
         except ZeroDivisionError:
-            d_roi = math.inf
+            d_rotc = math.inf
             
-        return d_roi * 100.0
+        return d_rotc * 100.0
     
     def get_total_dividend_amount(self, start_date, end_date):
         return sum(
@@ -539,13 +539,13 @@ if __name__ == '__main__':
     # Expected: 8.75
     print('  Acquisition price: {:.2f} €'.format(s1.acquisition_price))
     # Expected: 291.00
-    print('  Current total investment: {:.2f} €'.format(s1.total_investment))
+    print('  Current tied capital: {:.2f} €'.format(s1.tied_capital))
     # Expected: -11.0
-    print('  Profit/loss: {:.2f} €'.format(s1.profit_loss))
+    print('  Profit/loss: {:.2f} €'.format(s1.realized_profit_loss))
     # Expected: 77.71
     print('  Yield on cost (12 months): {:.2f} %'.format(s1.yield_on_cost_12_months))
     # Expected: 74,78
-    print('  Dividend ROI (12 months): {:.2f} %'.format(s1.dividend_return_on_investment_12_months))
+    print('  Dividend ROTC (12 months): {:.2f} %'.format(s1.dividend_return_on_tied_capital_12_months))
     
     
     print()
@@ -568,14 +568,14 @@ if __name__ == '__main__':
     print('  Number of shares: {}'.format(s2.number_of_shares))
     # Expected: 8.20
     print('  Acquisition price: {:.2f} €'.format(s2.acquisition_price))
-    # Expected: 419
-    print('  Current total investment: {:.2f} €'.format(s2.total_investment))
+    # Expected: 419.0
+    print('  Current tied capital: {:.2f} €'.format(s2.tied_capital))
     # Expected: 40.0
-    print('  Profit/loss: {:.2f} €'.format(s2.profit_loss))
+    print('  Profit/loss: {:.2f} €'.format(s2.realized_profit_loss))
     # Expected: 28.06
     print('  Yield on cost (12 months): {:.2f} %'.format(s2.yield_on_cost_12_months))
     # Expected: 30.74
-    print('  Dividend ROI (12 months): {:.2f} %'.format(s2.dividend_return_on_investment_12_months))
+    print('  Dividend ROTC (12 months): {:.2f} %'.format(s2.dividend_return_on_tied_capital_12_months))
     
     print()
     
@@ -592,9 +592,9 @@ if __name__ == '__main__':
     
     print()
     print('Portfolio')    
-    print('  Current total investment: {:.2f} €'.format(p.total_investment))
+    print('  Current tied capital: {:.2f} €'.format(p.tied_capital))
     print('  Yield on cost (12 months): {:.2f} %'.format(p.yield_on_cost_12_months))
-    print('  Dividend ROI (12 months): {:.2f} %'.format(p.dividend_return_on_investment_12_months))
+    print('  Dividend ROTC (12 months): {:.2f} %'.format(p.dividend_return_on_tied_capital_12_months))
     print('  Total share fees: {:.2f} €'.format(p.get_total_share_fee(start_date, end_date)))
     print('  Total share tax: {:.2f} €'.format(p.get_total_share_tax(start_date, end_date)))
     print('  Total dividends received: {:.2f} €'.format(p.get_total_dividend_amount(start_date, end_date)))
