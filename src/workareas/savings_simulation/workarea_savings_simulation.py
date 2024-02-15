@@ -202,10 +202,10 @@ class Workarea:
         
         set_savings = QtChart.QBarSet('Savings')
         set_savings.append(savings)
-        set_savings.setColor(QtGui.QColor(0x25A18E))
+        set_savings.setColor(QtGui.QColor(0x25B92E))
         set_growth = QtChart.QBarSet('Growth')
         set_growth.append(growth)
-        set_savings.setColor(QtGui.QColor(0x25B92E))
+        set_growth.setColor(QtGui.QColor(0x4CA0C2))
         series = QtChart.QStackedBarSeries()
         series.append(set_savings)
         series.append(set_growth)

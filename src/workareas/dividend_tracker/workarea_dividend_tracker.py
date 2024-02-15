@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 
 from src.workareas.dividend_tracker.ui_mainbody_dividend_tracker import Ui_Form as Ui_Form_Mainbody
 from src.workareas.dividend_tracker.ui_slidemenu_dividend_tracker import Ui_Form as Ui_Form_Slidemenu
@@ -8,6 +8,8 @@ from src.workareas.dividend_tracker.ui_dialog_share import Ui_Dialog as Ui_Dialo
 from src.workareas.dividend_tracker.ui_dialog_booking import Ui_Dialog as Ui_Dialog_Booking
 from src.workareas.dividend_tracker.ui_dialog_table_settings import Ui_Dialog as Ui_Dialog_Table_Settings
 
+import math
+from datetime import date as dt
 from src.workareas.dividend_tracker.model.dividend_tracker import Share, Portfolio
 
 def display_error(err):
@@ -38,8 +40,16 @@ class Workarea:
         
         self._change_observer_callbacks = []
         
+        self.ui_mainbody.chart_dashboard = QtChart.QChart()
+        self.ui_mainbody.chart_dashboard.setTheme(QtChart.QChart.ChartThemeDark)
+        self.ui_mainbody.chart_dashboard.setAnimationOptions(QtChart.QChart.SeriesAnimations)
+        self.ui_mainbody.chartview_dashboard.setChart(self.ui_mainbody.chart_dashboard)
+        
         for _w in [
                 self.ui_slidemenu.frame_header,
+                self.ui_mainbody.frame_3, self.ui_mainbody.frame_4,
+                self.ui_mainbody.frame_11, self.ui_mainbody.frame_12,
+                self.ui_mainbody.chart_dashboard
                 ]:
             shadow = QtWidgets.QGraphicsDropShadowEffect()
             shadow.setBlurRadius(8)
@@ -50,8 +60,6 @@ class Workarea:
         
         ###############
         # TESTDATA
-        
-        from datetime import date as dt
         
         s1 = Share('ShareA', 'DE0012331')
         s2 = Share('ShareB', 'DE0044312')
@@ -117,12 +125,44 @@ class Workarea:
         
         ###############
         
+        _years = sorted(set(
+            d.date.year \
+            for s in self.dividend_portfolio.all_shares \
+            for d in s.dividend_payments
+            ))
+        if _years == []:
+            _years = [9999]
+            self.ui_mainbody.spin_box_start_year.setEnabled(False)
+            self.ui_mainbody.spin_box_end_year.setEnabled(False)
+        else:
+            self.ui_mainbody.spin_box_start_year.setEnabled(True)
+            self.ui_mainbody.spin_box_end_year.setEnabled(True)
+        self.ui_mainbody.spin_box_start_year.setMinimum(_years[0])
+        self.ui_mainbody.spin_box_start_year.setMaximum(_years[-1])
+        self.ui_mainbody.spin_box_start_year.setValue(_years[0])
+        self.ui_mainbody.spin_box_end_year.setMinimum(_years[0])
+        self.ui_mainbody.spin_box_end_year.setMaximum(_years[-1])
+        self.ui_mainbody.spin_box_end_year.setValue(_years[-1])
+        
+        self.ui_mainbody.spin_box_end_year.valueChanged.connect(
+            lambda n: self.ui_mainbody.spin_box_start_year.setMaximum(n)
+            )
+        self.ui_mainbody.spin_box_start_year.valueChanged.connect(
+            lambda n: self.ui_mainbody.spin_box_end_year.setMinimum(n)
+            )
+        
         self.table_model_all_bookings = BookingsTableModel(
             self.dividend_portfolio
             )
+        
+        self.sort_proxy_model = QtCore.QSortFilterProxyModel()
+        self.sort_proxy_model.setSourceModel(self.table_model_all_bookings)
         self.ui_mainbody.table_view_all_bookings.setModel(
-            self.table_model_all_bookings
+            self.sort_proxy_model
             )
+        self.ui_mainbody.table_view_all_bookings.setSortingEnabled(True)
+        
+        
         self.ui_mainbody.table_view_all_bookings.setSelectionBehavior(
             QtWidgets.QTableView.SelectRows
             )
@@ -146,7 +186,8 @@ class Workarea:
         self.ui_mainbody.table_view_all_shares.horizontalHeader().setStretchLastSection(True)
         
         self._update_tables()
-        
+        self._update_all_portfolio_specific_values()
+        self._update_staked_bar_chart()
         
         self.ui_mainbody.button_edit_share.clicked.connect(
             self.open_dialog_edit_share
@@ -172,6 +213,18 @@ class Workarea:
         self.ui_mainbody.button_table_settings_booking.clicked.connect(
             self.open_dialog_table_settings_booking
             )
+        self.ui_mainbody.check_box_tax.stateChanged.connect(
+            self._update_staked_bar_chart
+            )
+        self.ui_mainbody.check_box_fee.stateChanged.connect(
+            self._update_staked_bar_chart
+            )
+        self.ui_mainbody.spin_box_start_year.valueChanged.connect(
+            self._update_staked_bar_chart
+            )
+        self.ui_mainbody.spin_box_end_year.valueChanged.connect(
+            self._update_staked_bar_chart
+            )
         
         self.ui_slidemenu.button_new_portfolio.clicked.connect(
             self.new_dividend_portfolio
@@ -182,6 +235,14 @@ class Workarea:
         self.ui_slidemenu.button_new_booking.clicked.connect(
             self.open_dialog_new_booking
             )
+        
+        self.chart_dashboard_annotation = QtWidgets.QGraphicsSimpleTextItem(
+            self.ui_mainbody.chart_dashboard
+            )
+        self.chart_dashboard_rect = QtWidgets.QGraphicsRectItem(
+            self.ui_mainbody.chart_dashboard)
+        self.chart_dashboard_rect.setBrush(QtCore.Qt.white)
+        self.chart_dashboard_rect.setPen(QtCore.Qt.black)
     
     def register_change_observer(self, change_observer_callback):
         self._change_observer_callbacks.append(change_observer_callback)
@@ -214,6 +275,8 @@ class Workarea:
         self.table_model_all_shares.dividend_portfolio = self.dividend_portfolio
         
         self._update_tables()
+        self._update_all_portfolio_specific_values()
+        self._update_staked_bar_chart()
     
     def set_default_values(self):
         self.dividend_portfolio = Portfolio()
@@ -227,15 +290,193 @@ class Workarea:
             )
         
         self._update_tables()
+        self._update_all_portfolio_specific_values()
+        self._update_staked_bar_chart()
         self._notify_change_observer()
     
     def _update_tables(self):
         self.table_model_all_bookings.layoutChanged.emit()
+        self.sort_proxy_model.layoutChanged.emit()
         for i in range(self.table_model_all_bookings.columnCount(None)):
             self.ui_mainbody.table_view_all_bookings.resizeColumnToContents(i)
         self.table_model_all_shares.layoutChanged.emit()
         for i in range(self.table_model_all_shares.columnCount(None)):
             self.ui_mainbody.table_view_all_shares.resizeColumnToContents(i)
+    
+    def _update_all_portfolio_specific_values(self):
+        _years = sorted(set(
+            d.date.year \
+            for s in self.dividend_portfolio.all_shares \
+            for d in s.dividend_payments
+            ))
+        if _years == []:
+            _years = [9999]
+            self.ui_mainbody.spin_box_start_year.setEnabled(False)
+            self.ui_mainbody.spin_box_end_year.setEnabled(False)
+            net_dividends = 0.0
+        else:
+            self.ui_mainbody.spin_box_start_year.setEnabled(True)
+            self.ui_mainbody.spin_box_end_year.setEnabled(True)
+            dividend_fee = self.dividend_portfolio.get_total_dividend_fee(
+                dt(_years[0], 1, 1), dt(_years[-1], 12, 31)
+                )
+            dividend_tax = self.dividend_portfolio.get_total_dividend_tax(
+                dt(_years[0], 1, 1), dt(_years[-1], 12, 31)
+                )
+            dividends = self.dividend_portfolio.get_total_dividend_amount(
+                dt(_years[0], 1, 1), dt(_years[-1], 12, 31)
+                )
+            net_dividends = dividends - dividend_tax - dividend_fee
+        self.ui_mainbody.spin_box_start_year.setMinimum(_years[0])
+        self.ui_mainbody.spin_box_start_year.setMaximum(_years[-1])
+        self.ui_mainbody.spin_box_start_year.setValue(_years[0])
+        self.ui_mainbody.spin_box_end_year.setMinimum(_years[0])
+        self.ui_mainbody.spin_box_end_year.setMaximum(_years[-1])
+        self.ui_mainbody.spin_box_end_year.setValue(_years[-1])
+        
+        self.ui_mainbody.label_tied_capital.setText(
+            '{:,.2f} €'.format(self.dividend_portfolio.tied_capital)
+            )
+        self.ui_mainbody.label_realized_profit_loss.setText(
+            '{:,.2f} €'.format(self.dividend_portfolio.realized_profit_loss)
+            )
+        self.ui_mainbody.label_total_net_dividends.setText(
+            '{:,.2f} €'.format(net_dividends)
+            )
+        self.ui_mainbody.label_rotc_last_12_m.setText(
+            '{:,.2f} %'.format(self.dividend_portfolio.dividend_return_on_tied_capital_12_months)
+            )
+        self.ui_mainbody.label_yoc_last_12_m.setText(
+            '{:,.2f} %'.format(self.dividend_portfolio.yield_on_cost_12_months)
+            )
+    
+    def _update_staked_bar_chart(self):
+        _start_year = self.ui_mainbody.spin_box_start_year.value()
+        _end_year = self.ui_mainbody.spin_box_end_year.value()
+        _years = list(range(_start_year, _end_year + 1))
+        if _years == [9999]:
+            self.ui_mainbody.chart_dashboard.removeAllSeries()
+            for ax in self.ui_mainbody.chart_dashboard.axes():
+                self.ui_mainbody.chart_dashboard.removeAxis(ax)
+            return
+        
+        dividend_fee_by_year = [
+            self.dividend_portfolio.get_total_dividend_fee(
+                dt(_y, 1, 1), dt(_y, 12, 31)
+                ) for _y in _years
+            ]
+        dividend_tax_by_year = [
+            self.dividend_portfolio.get_total_dividend_tax(
+                dt(_y, 1, 1), dt(_y, 12, 31)
+                ) for _y in _years
+            ]
+        dividends_by_year = [
+            self.dividend_portfolio.get_total_dividend_amount(
+                dt(_y, 1, 1), dt(_y, 12, 31)
+                ) for _y in _years
+            ]
+        net_dividends_by_year = [
+            d-t-f for d,t,f in zip(
+                dividends_by_year, dividend_tax_by_year, dividend_fee_by_year
+                )
+            ]
+        
+        series = QtChart.QStackedBarSeries()
+        
+        _max_value = max(net_dividends_by_year)
+        set_dividends = QtChart.QBarSet('Net dividends')
+        set_dividends.append(net_dividends_by_year)
+        set_dividends.setColor(QtGui.QColor(0x25B92E))
+        set_dividends.hovered.connect(self._show_info_label_on_hover)
+        series.append(set_dividends)
+        
+        if self.ui_mainbody.check_box_tax.isChecked():
+            _max_value += max(dividend_tax_by_year)
+            set_dividend_tax = QtChart.QBarSet('Tax')
+            set_dividend_tax.append(dividend_tax_by_year)
+            set_dividend_tax.setColor(QtGui.QColor(0xBA2539))
+            set_dividend_tax.hovered.connect(self._show_info_label_on_hover)
+            series.append(set_dividend_tax)
+        
+        if self.ui_mainbody.check_box_fee.isChecked():
+            _max_value += max(dividend_fee_by_year)
+            set_dividend_fee = QtChart.QBarSet('Fee')
+            set_dividend_fee.append(dividend_fee_by_year)
+            set_dividend_fee.setColor(QtGui.QColor(0x2952B3))
+            set_dividend_fee.hovered.connect(self._show_info_label_on_hover)
+            series.append(set_dividend_fee)
+        
+        self.ui_mainbody.chart_dashboard.setLocalizeNumbers(True)
+        self.ui_mainbody.chart_dashboard.removeAllSeries()
+        self.ui_mainbody.chart_dashboard.addSeries(series)
+        
+        year_axis = QtChart.QBarCategoryAxis()
+        year_axis.append(['{}'.format(_y) for _y in _years])
+        year_axis.setTitleText('Year')
+        
+        _max = math.ceil(_max_value / 100) * 100
+        _tick_interval = 100 * (_max // 500 + 1)
+        value_axis = QtChart.QValueAxis()
+        value_axis.setTickType(QtChart.QValueAxis.TicksDynamic)
+        value_axis.setMin(0)
+        value_axis.setMax(_max)
+        value_axis.setTickAnchor(min(0, min(dividends_by_year)))
+        value_axis.setTickInterval(_tick_interval)
+        value_axis.setMinorTickCount(1)
+        value_axis.setLabelFormat('%.0f €')
+        value_axis.setTitleText('Amount')
+        
+        for ax in self.ui_mainbody.chart_dashboard.axes():
+            self.ui_mainbody.chart_dashboard.removeAxis(ax)
+        self.ui_mainbody.chart_dashboard.setAxisX(year_axis, series)
+        self.ui_mainbody.chart_dashboard.setAxisY(value_axis, series)
+    
+    def _show_info_label_on_hover(self, status, index):
+        chart = self.ui_mainbody.chart_dashboard
+        chart_annotation = self.chart_dashboard_annotation
+        chart_rect = self.chart_dashboard_rect
+        
+        chart_rect.setVisible(status)
+        chart_annotation.setBrush(
+            QtGui.QBrush(QtCore.Qt.black)
+            )
+        
+        _sets = chart.series()[0].barSets()
+        _labels = [
+            '{:>11,.2f} € (Net dividends)',
+            '{:>11,.2f} € (Tax)',
+            '{:>11,.2f} € (Fees)'
+            ]
+        x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
+        annotation_text = 'Year {}:'.format(x_axis_categories[index])
+        for _l, _s in zip(_labels, _sets):
+            annotation_text += '\n'
+            annotation_text += _l.format(_s[index])
+        chart_annotation.setText(annotation_text)
+        
+        y_axis = chart.axes(QtCore.Qt.Vertical)[0]
+        p1 = chart.mapToPosition(
+            QtCore.QPointF(-0.42, y_axis.max()*0.99)
+            )
+        
+        chart_annotation.setPos(p1)
+        chart_annotation.setZValue(20)
+        chart_annotation.setVisible(status)
+        
+        r = chart_annotation.boundingRect()
+        p2 = chart.mapToPosition(QtCore.QPointF(-0.45, y_axis.max()))
+        p3 = p1-p2
+        chart_rect.setRect(
+            p2.x(), p2.y(),
+            r.width()+2*p3.x(), r.height()+2*p3.y())
+        chart_rect.setZValue(10)
+        chart_rect.setVisible(status)
+    
+    def switch_stacked_widget(self, with_tax):
+        if with_tax:
+            self.ui_mainbody.stackedWidget.setCurrentIndex(1)
+        else:
+            self.ui_mainbody.stackedWidget.setCurrentIndex(0)
     
     def _get_selected_share(self):
         share = None
@@ -299,19 +540,31 @@ class Workarea:
             
             self.dividend_portfolio.remove_share(share)
             self._update_tables()
-            
+            self._update_all_portfolio_specific_values()
+            self._update_staked_bar_chart()
             self._notify_change_observer()
     
     def _get_selected_booking(self):
         share, booking = None, None
         r = self.ui_mainbody.table_view_all_bookings.selectionModel().selectedRows()
         if r:
-            row = r[0].row()
+            row = self.sort_proxy_model.mapToSource(r[0]).row()
             index = self.table_model_all_bookings.createIndex(row, 0)
             share, booking = self.table_model_all_bookings.data(index, QtCore.Qt.UserRole)
         return share, booking
     
     def open_dialog_new_booking(self):
+        if self.dividend_portfolio.all_shares == []:
+            message = ('There are no shares available in this portfolio. '
+                       'Please add a new share first.')
+            
+            QtWidgets.QMessageBox.information(
+                self.slidemenu, 'No shares available', message,
+                QtWidgets.QMessageBox.Ok
+                )
+            return
+        
+        self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         dialog_booking = DialogBooking(
             self.dividend_portfolio, is_new_booking = True,
             share = None, booking = None
@@ -319,6 +572,8 @@ class Workarea:
         dialog_booking.exec()
         if dialog_booking.accepted:
             self._update_tables()
+            self._update_all_portfolio_specific_values()
+            self._update_staked_bar_chart()
             self._notify_change_observer()
     
     def open_dialog_edit_booking(self):
@@ -327,6 +582,7 @@ class Workarea:
         share, booking = self._get_selected_booking()
         
         if share and booking:
+            self.table_model_all_bookings.layoutAboutToBeChanged.emit()
             dialog_booking = DialogBooking(
                 self.dividend_portfolio, is_new_booking = False,
                 share = share, booking = booking
@@ -334,6 +590,8 @@ class Workarea:
             dialog_booking.exec()
             if dialog_booking.accepted:
                 self._update_tables()
+                self._update_all_portfolio_specific_values()
+                self._update_staked_bar_chart()
                 self._notify_change_observer()
     
     def open_dialog_table_settings_share(self):
@@ -374,12 +632,16 @@ class Workarea:
                 return
             
             try:
+                self.table_model_all_bookings.layoutAboutToBeChanged.emit()
                 share.delete_booking(booking)
             except Exception as err:
                 display_error(err)
                 return
             
             self._update_tables()
+            self.ui_mainbody.table_view_all_bookings.clearSelection()
+            self._update_all_portfolio_specific_values()
+            self._update_staked_bar_chart()
             self._notify_change_observer()
 
 class BookingsTableModel(QtCore.QAbstractTableModel):
@@ -390,10 +652,10 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
         2: ['name', 'Name', ' {} '],
         3: ['isin', 'ISIN', ' {} '],
         4: ['number_of_shares', '# Shares', ' {:d}'],
-        5: ['amount_per_share', 'Amount/Share', ' {:.2f} €'],
-        6: ['amount', 'Amount', ' {:.2f} €'],
-        7: ['fee', 'Fee', ' {:.2f} €'],
-        8: ['tax', 'Tax', ' {:.2f} €']
+        5: ['amount_per_share', 'Amount/Share', ' {:,.2f} €'],
+        6: ['amount', 'Amount', ' {:,.2f} €'],
+        7: ['fee', 'Fee', ' {:,.2f} €'],
+        8: ['tax', 'Tax', ' {:,.2f} €']
         }
     
     USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
@@ -478,11 +740,11 @@ class ShareTableModel(QtCore.QAbstractTableModel):
         0: ['name', 'Name', ' {} '],
         1: ['isin', 'ISIN', ' {} '],
         2: ['number_of_shares', '# Shares', ' {:d}'],
-        3: ['acquisition_price', 'Acquisition price', ' {:.2f} €'],
-        4: ['tied_capital', 'Tied capital', ' {:.2f} €'],
-        5: ['realized_profit_loss', 'Realized P/L', ' {:.2f} €'],
-        6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:.2f} %'],
-        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:.2f} %']
+        3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €'],
+        4: ['tied_capital', 'Tied capital', ' {:,.2f} €'],
+        5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €'],
+        6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %'],
+        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %']
         }
     
     USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
@@ -619,50 +881,60 @@ class DialogBooking(QtWidgets.QDialog):
         shadow.setColor(QtGui.QColor(0, 0, 0, 255))
         self.ui_dialog.frame_header.setGraphicsEffect(shadow)
         
-        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
-            lambda v: self.ui_dialog.total_amount.setText(
-                '{:.2f} €'.format(v * self.ui_dialog.amount_per_share.value())
-                )
-            )
-        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_amount.setText(
-                '{:.2f} €'.format(self.ui_dialog.number_of_shares.value() * v)
+        self.ui_dialog.combo_box_type.currentIndexChanged['QString'].connect(
+            lambda v: self.ui_dialog.total_value.setText(
+                '{:,.2f} €'.format(
+                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
+                    (1-2*(v == 'Dividend'))*self.ui_dialog.fee.value() + \
+                    (1-2*(v == 'Dividend'))*self.ui_dialog.tax.value()
+                    )
                 )
             )
         
         self.ui_dialog.number_of_shares.valueChanged['int'].connect(
-            lambda v: self.ui_dialog.total_cost.setText(
-                '{:.2f} €'.format(
+            lambda v: self.ui_dialog.total_amount.setText(
+                '{:,.2f} €'.format(v * self.ui_dialog.amount_per_share.value())
+                )
+            )
+        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
+            lambda v: self.ui_dialog.total_amount.setText(
+                '{:,.2f} €'.format(self.ui_dialog.number_of_shares.value() * v)
+                )
+            )
+        
+        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
+            lambda v: self.ui_dialog.total_value.setText(
+                '{:,.2f} €'.format(
                     v * self.ui_dialog.amount_per_share.value() + \
-                    self.ui_dialog.fee.value() + \
-                    self.ui_dialog.tax.value()
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
                     )
                 )
             )
         self.ui_dialog.amount_per_share.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_cost.setText(
-                '{:.2f} €'.format(
+            lambda v: self.ui_dialog.total_value.setText(
+                '{:,.2f} €'.format(
                     self.ui_dialog.number_of_shares.value() * v + \
-                    self.ui_dialog.fee.value() + \
-                    self.ui_dialog.tax.value()
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
                     )
                 )
             )
         self.ui_dialog.fee.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_cost.setText(
-                '{:.2f} €'.format(
+            lambda v: self.ui_dialog.total_value.setText(
+                '{:,.2f} €'.format(
                     self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
-                    v + \
-                    self.ui_dialog.tax.value()
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*v + \
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
                     )
                 )
             )
         self.ui_dialog.tax.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_cost.setText(
-                '{:.2f} €'.format(
+            lambda v: self.ui_dialog.total_value.setText(
+                '{:,.2f} €'.format(
                     self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
-                    self.ui_dialog.fee.value() + \
-                    v
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
+                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*v
                     )
                 )
             )
@@ -691,17 +963,17 @@ class DialogBooking(QtWidgets.QDialog):
             )
         
         self.ui_dialog.total_amount.setText(
-            '{:.2f} €'.format(
+            '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value()
                 )
             )
-        self.ui_dialog.total_cost.setText(
-            '{:.2f} €'.format(
+        self.ui_dialog.total_value.setText(
+            '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value() + \
-                self.ui_dialog.fee.value() + \
-                self.ui_dialog.tax.value()
+                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
+                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
                 )
             )
     
@@ -717,7 +989,7 @@ class DialogBooking(QtWidgets.QDialog):
         self.ui_dialog.number_of_shares.setValue(self.booking.number_of_shares)
         self.ui_dialog.amount_per_share.setValue(self.booking.amount_per_share)
         self.ui_dialog.total_amount.setText(
-            '{:.2f} €'.format(
+            '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value()
                 )
@@ -725,17 +997,16 @@ class DialogBooking(QtWidgets.QDialog):
         self.ui_dialog.fee.setValue(self.booking.fee)
         self.ui_dialog.tax.setValue(self.booking.tax)
         
-        self.ui_dialog.total_cost.setText(
-            '{:.2f} €'.format(
+        self.ui_dialog.total_value.setText(
+            '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value() + \
-                self.ui_dialog.fee.value() + \
-                self.ui_dialog.tax.value()
+                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
+                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
                 )
             )
     
     def accept(self):
-        
         new_date = self.ui_dialog.date_booking.date().toPyDate()
         new_number_of_shares = self.ui_dialog.number_of_shares.value()
         new_amount_per_share = self.ui_dialog.amount_per_share.value()
