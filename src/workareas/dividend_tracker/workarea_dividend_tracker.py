@@ -155,13 +155,14 @@ class Workarea:
             self.dividend_portfolio
             )
         
-        self.sort_proxy_model = QtCore.QSortFilterProxyModel()
-        self.sort_proxy_model.setSourceModel(self.table_model_all_bookings)
+        self.sort_bookings_proxy_model = QtCore.QSortFilterProxyModel()
+        self.sort_bookings_proxy_model.setSourceModel(self.table_model_all_bookings)
+        self.sort_bookings_proxy_model.setSortRole(BookingsTableModel.SORT_ROLE)
         self.ui_mainbody.table_view_all_bookings.setModel(
-            self.sort_proxy_model
+            self.sort_bookings_proxy_model
             )
         self.ui_mainbody.table_view_all_bookings.setSortingEnabled(True)
-        
+        self.sort_bookings_proxy_model.sort(0, QtCore.Qt.DescendingOrder)
         
         self.ui_mainbody.table_view_all_bookings.setSelectionBehavior(
             QtWidgets.QTableView.SelectRows
@@ -171,12 +172,24 @@ class Workarea:
             )
         self.ui_mainbody.table_view_all_bookings.horizontalHeader().setStretchLastSection(True)
         
+        
         self.table_model_all_shares = ShareTableModel(
             self.dividend_portfolio
             )
+        
+        self.sort_shares_proxy_model = QtCore.QSortFilterProxyModel()
+        self.sort_shares_proxy_model.setSourceModel(self.table_model_all_shares)
+        self.sort_shares_proxy_model.setSortRole(ShareTableModel.SORT_ROLE)
         self.ui_mainbody.table_view_all_shares.setModel(
-            self.table_model_all_shares
+            self.sort_shares_proxy_model
             )
+        self.ui_mainbody.table_view_all_shares.setSortingEnabled(True)
+        self.sort_shares_proxy_model.sort(0, QtCore.Qt.DescendingOrder)
+        
+        # self.ui_mainbody.table_view_all_shares.setModel(
+        #     self.table_model_all_shares
+        #     )
+        
         self.ui_mainbody.table_view_all_shares.setSelectionBehavior(
             QtWidgets.QTableView.SelectRows
             )
@@ -283,10 +296,10 @@ class Workarea:
         self.table_model_all_bookings.dividend_portfolio = self.dividend_portfolio
         self.table_model_all_shares.dividend_portfolio = self.dividend_portfolio
         ShareTableModel.USED_COLUMNS = list(
-            ShareTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            ShareTableModel.COLUMN_INFO.keys()
             )
         BookingsTableModel.USED_COLUMNS = list(
-            BookingsTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            BookingsTableModel.COLUMN_INFO.keys()
             )
         
         self._update_tables()
@@ -296,10 +309,12 @@ class Workarea:
     
     def _update_tables(self):
         self.table_model_all_bookings.layoutChanged.emit()
-        self.sort_proxy_model.layoutChanged.emit()
+        self.sort_bookings_proxy_model.layoutChanged.emit()
         for i in range(self.table_model_all_bookings.columnCount(None)):
             self.ui_mainbody.table_view_all_bookings.resizeColumnToContents(i)
+        
         self.table_model_all_shares.layoutChanged.emit()
+        self.sort_shares_proxy_model.layoutChanged.emit()
         for i in range(self.table_model_all_shares.columnCount(None)):
             self.ui_mainbody.table_view_all_shares.resizeColumnToContents(i)
     
@@ -482,9 +497,11 @@ class Workarea:
         share = None
         r = self.ui_mainbody.table_view_all_shares.selectionModel().selectedRows()
         if r:
-            row = r[0].row()
+            row = self.sort_shares_proxy_model.mapToSource(r[0]).row()
             index = self.table_model_all_shares.createIndex(row, 0)
-            share = self.table_model_all_shares.data(index, QtCore.Qt.UserRole)
+            share = self.table_model_all_shares.data(
+                index, ShareTableModel.GET_DATA_ROLE
+                )
         return share
     
     def new_dividend_portfolio(self):
@@ -503,6 +520,7 @@ class Workarea:
         self.set_default_values()
     
     def open_dialog_new_share(self):
+        self.table_model_all_shares.layoutAboutToBeChanged.emit()
         dialog_share = DialogShare(
             self.dividend_portfolio, is_new_share = True, share = None
             )
@@ -515,6 +533,7 @@ class Workarea:
         share = self._get_selected_share()
         
         if share:
+            self.table_model_all_shares.layoutAboutToBeChanged.emit()
             dialog_share = DialogShare(
                 self.dividend_portfolio, is_new_share = False, share = share
                 )
@@ -538,8 +557,15 @@ class Workarea:
             if button == QtWidgets.QMessageBox.Cancel:
                 return
             
-            self.dividend_portfolio.remove_share(share)
+            try:
+                self.table_model_all_shares.layoutAboutToBeChanged.emit()
+                self.dividend_portfolio.remove_share(share)
+            except Exception as err:
+                display_error(err)
+                return
+            
             self._update_tables()
+            self.ui_mainbody.table_view_all_shares.clearSelection()
             self._update_all_portfolio_specific_values()
             self._update_staked_bar_chart()
             self._notify_change_observer()
@@ -548,9 +574,11 @@ class Workarea:
         share, booking = None, None
         r = self.ui_mainbody.table_view_all_bookings.selectionModel().selectedRows()
         if r:
-            row = self.sort_proxy_model.mapToSource(r[0]).row()
+            row = self.sort_bookings_proxy_model.mapToSource(r[0]).row()
             index = self.table_model_all_bookings.createIndex(row, 0)
-            share, booking = self.table_model_all_bookings.data(index, QtCore.Qt.UserRole)
+            share, booking = self.table_model_all_bookings.data(
+                index, BookingsTableModel.GET_DATA_ROLE
+                )
         return share, booking
     
     def open_dialog_new_booking(self):
@@ -564,6 +592,7 @@ class Workarea:
                 )
             return
         
+        self.table_model_all_shares.layoutAboutToBeChanged.emit()
         self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         dialog_booking = DialogBooking(
             self.dividend_portfolio, is_new_booking = True,
@@ -582,6 +611,7 @@ class Workarea:
         share, booking = self._get_selected_booking()
         
         if share and booking:
+            self.table_model_all_shares.layoutAboutToBeChanged.emit()
             self.table_model_all_bookings.layoutAboutToBeChanged.emit()
             dialog_booking = DialogBooking(
                 self.dividend_portfolio, is_new_booking = False,
@@ -596,7 +626,7 @@ class Workarea:
     
     def open_dialog_table_settings_share(self):
         dialog_table_settings = DialogTableSettings(
-            ShareTableModel.COLUMN_ORDER_AND_DISPLAY,
+            ShareTableModel.COLUMN_INFO,
             ShareTableModel.USED_COLUMNS
             )
         dialog_table_settings.exec()
@@ -607,7 +637,7 @@ class Workarea:
         
     def open_dialog_table_settings_booking(self):
         dialog_table_settings = DialogTableSettings(
-            BookingsTableModel.COLUMN_ORDER_AND_DISPLAY,
+            BookingsTableModel.COLUMN_INFO,
             BookingsTableModel.USED_COLUMNS
             )
         dialog_table_settings.exec()
@@ -632,6 +662,7 @@ class Workarea:
                 return
             
             try:
+                self.table_model_all_shares.layoutAboutToBeChanged.emit()
                 self.table_model_all_bookings.layoutAboutToBeChanged.emit()
                 share.delete_booking(booking)
             except Exception as err:
@@ -646,25 +677,27 @@ class Workarea:
 
 class BookingsTableModel(QtCore.QAbstractTableModel):
     
-    COLUMN_ORDER_AND_DISPLAY = {
-        0: ['date', 'Date', ' {} '],
-        1: ['type', 'Type', ' {} '],
-        2: ['name', 'Name', ' {} '],
-        3: ['isin', 'ISIN', ' {} '],
-        4: ['number_of_shares', '# Shares', ' {:d}'],
-        5: ['amount_per_share', 'Amount/Share', ' {:,.2f} €'],
-        6: ['amount', 'Amount', ' {:,.2f} €'],
-        7: ['fee', 'Fee', ' {:,.2f} €'],
-        8: ['tax', 'Tax', ' {:,.2f} €']
+    COLUMN_INFO = {
+        0: ['date', 'Date', ' {} ', str],
+        1: ['type', 'Type', ' {} ', str],
+        2: ['name', 'Name', ' {} ', str],
+        3: ['isin', 'ISIN', ' {} ', str],
+        4: ['number_of_shares', '# Shares', ' {:d}', int],
+        5: ['amount_per_share', 'Amount/Share', ' {:,.2f} €', float],
+        6: ['amount', 'Amount', ' {:,.2f} €', float],
+        7: ['fee', 'Fee', ' {:,.2f} €', float],
+        8: ['tax', 'Tax', ' {:,.2f} €', float]
         }
     
-    USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
+    USED_COLUMNS = list(COLUMN_INFO.keys())
+    
+    GET_DATA_ROLE = QtCore.Qt.UserRole
+    SORT_ROLE = QtCore.Qt.UserRole + 1
     
     def __init__(self, dividend_portfolio):
         super(BookingsTableModel, self).__init__()
         self.dividend_portfolio = dividend_portfolio
     
-    # TODO: Überprüfen, ob alles korrekt angezeigt wird
     def _get_booking(self, index):
         n = 0
         for share in self.dividend_portfolio.all_shares:
@@ -692,8 +725,8 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
             
             col = self.USED_COLUMNS[index.column()]
             
-            attr_name = self.COLUMN_ORDER_AND_DISPLAY[col][0]
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_name = self.COLUMN_INFO[col][0]
+            attr_format = self.COLUMN_INFO[col][2]
             
             value = getattr(booking, attr_name)
             
@@ -706,15 +739,32 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
         
         if role == QtCore.Qt.TextAlignmentRole:
             col = index.column()
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_format = self.COLUMN_INFO[col][2]
             if attr_format != '{}':
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
             else:
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
         
-        if role == QtCore.Qt.UserRole:
+        if role == self.GET_DATA_ROLE:
             share, booking = self._get_booking(index)
             return share, booking
+        
+        if role == self.SORT_ROLE:
+            _, booking = self._get_booking(index)
+            
+            col = self.USED_COLUMNS[index.column()]
+            
+            attr_name = self.COLUMN_INFO[col][0]
+            attr_type = self.COLUMN_INFO[col][3]
+            
+            value = getattr(booking, attr_name)
+            
+            if value == None:
+                r_value = 'N/A'
+            else:
+                r_value = attr_type(value)
+            
+            return r_value
     
     def rowCount(self, index):
         return sum(
@@ -730,24 +780,27 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
             if orientation == QtCore.Qt.Horizontal:
                 _s = self.USED_COLUMNS[section]
                 header_str = '  {}  '.format(
-                    self.COLUMN_ORDER_AND_DISPLAY[_s][1]
+                    self.COLUMN_INFO[_s][1]
                     )
                 return header_str
 
 class ShareTableModel(QtCore.QAbstractTableModel):
     
-    COLUMN_ORDER_AND_DISPLAY = {
-        0: ['name', 'Name', ' {} '],
-        1: ['isin', 'ISIN', ' {} '],
-        2: ['number_of_shares', '# Shares', ' {:d}'],
-        3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €'],
-        4: ['tied_capital', 'Tied capital', ' {:,.2f} €'],
-        5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €'],
-        6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %'],
-        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %']
+    COLUMN_INFO = {
+        0: ['name', 'Name', ' {} ', str],
+        1: ['isin', 'ISIN', ' {} ', str],
+        2: ['number_of_shares', '# Shares', ' {:d}', int],
+        3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €', float],
+        4: ['tied_capital', 'Tied capital', ' {:,.2f} €', float],
+        5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €', float],
+        6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %', float],
+        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %', float]
         }
     
-    USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
+    USED_COLUMNS = list(COLUMN_INFO.keys())
+    
+    GET_DATA_ROLE = QtCore.Qt.UserRole
+    SORT_ROLE = QtCore.Qt.UserRole + 1
     
     def __init__(self, dividend_portfolio):
         super(ShareTableModel, self).__init__()
@@ -760,8 +813,8 @@ class ShareTableModel(QtCore.QAbstractTableModel):
             
             col = self.USED_COLUMNS[index.column()]
             
-            attr_name = self.COLUMN_ORDER_AND_DISPLAY[col][0]
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_name = self.COLUMN_INFO[col][0]
+            attr_format = self.COLUMN_INFO[col][2]
             
             value = getattr(share, attr_name)
             
@@ -774,15 +827,32 @@ class ShareTableModel(QtCore.QAbstractTableModel):
         
         if role == QtCore.Qt.TextAlignmentRole:
             col = index.column()
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_format = self.COLUMN_INFO[col][2]
             if attr_format != '{}':
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
             else:
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
         
-        if role == QtCore.Qt.UserRole:
+        if role == self.GET_DATA_ROLE:
             share = self.dividend_portfolio.all_shares[index.row()]
             return share
+        
+        if role == self.SORT_ROLE:
+            share = self.dividend_portfolio.all_shares[index.row()]
+            
+            col = self.USED_COLUMNS[index.column()]
+            
+            attr_name = self.COLUMN_INFO[col][0]
+            attr_type = self.COLUMN_INFO[col][3]
+            
+            value = getattr(share, attr_name)
+            
+            if value == None:
+                r_value = 'N/A'
+            else:
+                r_value = attr_type(value)
+            
+            return r_value
     
     def rowCount(self, index):
         return len(self.dividend_portfolio.all_shares)
@@ -795,7 +865,7 @@ class ShareTableModel(QtCore.QAbstractTableModel):
             if orientation == QtCore.Qt.Horizontal:
                 _s = self.USED_COLUMNS[section]
                 header_str = '  {}  '.format(
-                    self.COLUMN_ORDER_AND_DISPLAY[_s][1]
+                    self.COLUMN_INFO[_s][1]
                     )
                 return header_str
 

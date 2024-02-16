@@ -159,7 +159,7 @@ class Workarea:
         self.table_model_trading_active.trading_portfolio = self.trading_portfolio
         self.table_model_trading_simulation.trading_portfolio = self.trading_portfolio
         TradingTableModel.USED_COLUMNS = list(
-            TradingTableModel.COLUMN_ORDER_AND_DISPLAY.keys()
+            TradingTableModel.COLUMN_INFO.keys()
             )
         
         self._update_text_all_portfolio_specific_values()
@@ -222,7 +222,7 @@ class Workarea:
     
     def open_dialog_table_settings(self):
         dialog_table_settings = DialogTableSettings(
-            TradingTableModel.COLUMN_ORDER_AND_DISPLAY,
+            TradingTableModel.COLUMN_INFO,
             TradingTableModel.USED_COLUMNS
             )
         dialog_table_settings.exec()
@@ -324,7 +324,7 @@ class Workarea:
 
 class TradingTableModel(QtCore.QAbstractTableModel):
     
-    COLUMN_ORDER_AND_DISPLAY = {
+    COLUMN_INFO = {
              0: ['name', 'Name', ' {} '],
              1: ['isin', 'ISIN', ' {} '],
              2: ['latest_price', 'Latest price', '{:.2f} €'],
@@ -340,7 +340,7 @@ class TradingTableModel(QtCore.QAbstractTableModel):
             12: ['days_left_dividend', 'Days until dividend', '{:d}']
             }
     
-    USED_COLUMNS = list(COLUMN_ORDER_AND_DISPLAY.keys())
+    USED_COLUMNS = list(COLUMN_INFO.keys())
     
     def __init__(self, trading_portfolio, is_active_status = True):
         super(TradingTableModel, self).__init__()
@@ -356,8 +356,8 @@ class TradingTableModel(QtCore.QAbstractTableModel):
             
             col = self.USED_COLUMNS[index.column()]
             
-            attr_name = self.COLUMN_ORDER_AND_DISPLAY[col][0]
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_name = self.COLUMN_INFO[col][0]
+            attr_format = self.COLUMN_INFO[col][2]
             
             value = getattr(trade, attr_name)
             
@@ -370,7 +370,7 @@ class TradingTableModel(QtCore.QAbstractTableModel):
         
         if role == QtCore.Qt.TextAlignmentRole:
             col = index.column()
-            attr_format = self.COLUMN_ORDER_AND_DISPLAY[col][2]
+            attr_format = self.COLUMN_INFO[col][2]
             if attr_format != '{}':
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
             else:
@@ -395,7 +395,7 @@ class TradingTableModel(QtCore.QAbstractTableModel):
             if orientation == QtCore.Qt.Horizontal:
                 _s = self.USED_COLUMNS[section]
                 header_str = '  {}  '.format(
-                    self.COLUMN_ORDER_AND_DISPLAY[_s][1]
+                    self.COLUMN_INFO[_s][1]
                     )
                 return header_str
 
