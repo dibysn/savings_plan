@@ -58,91 +58,7 @@ class Workarea:
             shadow.setColor(QtGui.QColor(0, 0, 0, 255))
             _w.setGraphicsEffect(shadow)
         
-        ###############
-        # TESTDATA
-        
-        s1 = Share('ShareA', 'DE0012331')
-        s2 = Share('ShareB', 'DE0044312')
-        
         self.dividend_portfolio = Portfolio()
-        self.dividend_portfolio.add_share(s1)
-        self.dividend_portfolio.add_share(s2)
-        
-        orders_s1 = [
-            ('buy',  dt(2022, 1, 2),    5, 10, 10,  0),
-            ('buy',  dt(2022, 2, 10),  10, 15, 10,  0),
-            ('buy',  dt(2022, 5, 11),  13,  3, 10,  0),
-            ('sell', dt(2022, 9, 23),  10, 12, 10, 13.20),
-            ('buy',  dt(2023, 2, 11),   5, 20, 12,  0),
-            ('sell', dt(2023, 2, 15),  11,  8, 12, 12.10),
-            ('buy',  dt(2023, 4, 2),   30,  8, 11,  1.10),
-            ('sell', dt(2023, 11, 29), 10,  8, 12, 10.50)
-            ]
-        
-        dividends_s1 = [
-            (dt(2022, 2, 1),    3, 1.6, 1,  2),
-            (dt(2022, 6, 5),   13, 1.6, 3,  0),
-            (dt(2022, 9, 18),  13, 1.6, 0,  0),
-            (dt(2022, 12, 1),  18, 1.6, 1, 10),
-            (dt(2023, 2, 1),   18, 1.7, 5, 11),
-            (dt(2023, 6, 19),  25, 1.7, 0,  9),
-            (dt(2023, 10, 12), 15, 1.7, 0,  8),
-            (dt(2023, 12, 6),  15, 1.7, 1,  3),
-            ]
-        
-        orders_s2 = [
-            ('buy',  dt(2022, 8, 11),  35,  7,  9,  1),
-            ('buy',  dt(2022, 9, 9),   18, 10,  7,  0),
-            ('buy',  dt(2023, 3, 17),  13,  8, 10,  1.30),
-            ('sell', dt(2023, 3, 22),  10, 11, 10, 13.20)
-            ]
-        
-        dividends_s2 = [
-            (dt(2022, 9, 1),   10, 0.5, 1, 10),
-            (dt(2023, 2, 2),   10, 0.5, 1, 10),
-            (dt(2023, 4, 7),   30, 0.6, 8, 19),
-            (dt(2023, 8, 18),  32, 0.6, 0,  8),
-            (dt(2023, 11, 8),  33, 0.6, 1,  0),
-            ]
-        
-        for o in orders_s1:
-            if o[0] == 'buy':
-                s1.create_buy_order(o[1], o[2], o[3], o[4], o[5])
-            else:
-                s1.create_sell_order(o[1], o[2], o[3], o[4], o[5])
-        
-        for d in dividends_s1:
-            s1.create_dividend(d[0], d[1], d[2], d[3], d[4])
-        
-        for o in orders_s2:
-            if o[0] == 'buy':
-                s2.create_buy_order(o[1], o[2], o[3], o[4], o[5])
-            else:
-                s2.create_sell_order(o[1], o[2], o[3], o[4], o[5])
-        
-        for d in dividends_s2:
-            s2.create_dividend(d[0], d[1], d[2], d[3], d[4])
-        
-        ###############
-        
-        _years = sorted(set(
-            d.date.year \
-            for s in self.dividend_portfolio.all_shares \
-            for d in s.dividend_payments
-            ))
-        if _years == []:
-            _years = [9999]
-            self.ui_mainbody.spin_box_start_year.setEnabled(False)
-            self.ui_mainbody.spin_box_end_year.setEnabled(False)
-        else:
-            self.ui_mainbody.spin_box_start_year.setEnabled(True)
-            self.ui_mainbody.spin_box_end_year.setEnabled(True)
-        self.ui_mainbody.spin_box_start_year.setMinimum(_years[0])
-        self.ui_mainbody.spin_box_start_year.setMaximum(_years[-1])
-        self.ui_mainbody.spin_box_start_year.setValue(_years[0])
-        self.ui_mainbody.spin_box_end_year.setMinimum(_years[0])
-        self.ui_mainbody.spin_box_end_year.setMaximum(_years[-1])
-        self.ui_mainbody.spin_box_end_year.setValue(_years[-1])
         
         self.ui_mainbody.spin_box_end_year.valueChanged.connect(
             lambda n: self.ui_mainbody.spin_box_start_year.setMaximum(n)
@@ -185,10 +101,6 @@ class Workarea:
             )
         self.ui_mainbody.table_view_all_shares.setSortingEnabled(True)
         self.sort_shares_proxy_model.sort(0, QtCore.Qt.DescendingOrder)
-        
-        # self.ui_mainbody.table_view_all_shares.setModel(
-        #     self.table_model_all_shares
-        #     )
         
         self.ui_mainbody.table_view_all_shares.setSelectionBehavior(
             QtWidgets.QTableView.SelectRows
