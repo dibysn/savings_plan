@@ -235,6 +235,12 @@ class Ui_Dialog(object):
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
+        Dialog.setTabOrder(self.combo_box_share, self.combo_box_type)
+        Dialog.setTabOrder(self.combo_box_type, self.date_booking)
+        Dialog.setTabOrder(self.date_booking, self.number_of_shares)
+        Dialog.setTabOrder(self.number_of_shares, self.amount_per_share)
+        Dialog.setTabOrder(self.amount_per_share, self.fee)
+        Dialog.setTabOrder(self.fee, self.tax)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate

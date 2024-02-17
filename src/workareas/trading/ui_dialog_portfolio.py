@@ -130,6 +130,8 @@ class Ui_Dialog(object):
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
+        Dialog.setTabOrder(self.initial_deposit, self.allowed_risk_portfolio)
+        Dialog.setTabOrder(self.allowed_risk_portfolio, self.allowed_risk_trade)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate

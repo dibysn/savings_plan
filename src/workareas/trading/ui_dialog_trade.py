@@ -271,6 +271,22 @@ class Ui_Dialog(object):
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
+        Dialog.setTabOrder(self.line_edit_name, self.line_edit_isin)
+        Dialog.setTabOrder(self.line_edit_isin, self.check_box_date_next_earnings)
+        Dialog.setTabOrder(self.check_box_date_next_earnings, self.date_next_earnings)
+        Dialog.setTabOrder(self.date_next_earnings, self.check_box_date_next_dividend)
+        Dialog.setTabOrder(self.check_box_date_next_dividend, self.date_next_dividend)
+        Dialog.setTabOrder(self.date_next_dividend, self.target_price)
+        Dialog.setTabOrder(self.target_price, self.entry_price)
+        Dialog.setTabOrder(self.entry_price, self.protective_stop)
+        Dialog.setTabOrder(self.protective_stop, self.number_of_shares)
+        Dialog.setTabOrder(self.number_of_shares, self.combo_box_active)
+        Dialog.setTabOrder(self.combo_box_active, self.check_box_latest_price)
+        Dialog.setTabOrder(self.check_box_latest_price, self.date_latest_price)
+        Dialog.setTabOrder(self.date_latest_price, self.latest_price)
+        Dialog.setTabOrder(self.latest_price, self.check_box_trade_close)
+        Dialog.setTabOrder(self.check_box_trade_close, self.date_trade_closed)
+        Dialog.setTabOrder(self.date_trade_closed, self.sell_price)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
