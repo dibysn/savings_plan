@@ -68,36 +68,36 @@ class MainWindow(QtWidgets.QMainWindow):
         slidemenu_workarea_savings_plan, \
         mainbody_workarea_savings_plan = workarea_savings_simulation.get_workarea_icon_and_widgets()
         
-        wa_trading, \
-        icon_workarea_trading, \
-        slidemenu_workarea_trading, \
-        mainbody_workarea_trading = workarea_trading.get_workarea_icon_and_widgets()
-        
         wa_dividend_tracker, \
         icon_workarea_dividend_tracker, \
         slidemenu_workarea_dividend_tracker, \
         mainbody_workarea_dividend_tracker = workarea_dividend_tracker.get_workarea_icon_and_widgets()
         
+        wa_trading, \
+        icon_workarea_trading, \
+        slidemenu_workarea_trading, \
+        mainbody_workarea_trading = workarea_trading.get_workarea_icon_and_widgets()
+        
         self.workareas = {
             wa_savings_plan.get_name_of_workarea(): wa_savings_plan,
-            wa_trading.get_name_of_workarea(): wa_trading,
-            wa_dividend_tracker.get_name_of_workarea(): wa_dividend_tracker
+            wa_dividend_tracker.get_name_of_workarea(): wa_dividend_tracker,
+            wa_trading.get_name_of_workarea(): wa_trading
             }
         
         self.slidemenu_workareas = [
             slidemenu_workarea_savings_plan,
-            slidemenu_workarea_trading,
-            slidemenu_workarea_dividend_tracker
+            slidemenu_workarea_dividend_tracker,
+            slidemenu_workarea_trading
             ]
         self.mainbody_workareas = [
             mainbody_workarea_savings_plan,
-            mainbody_workarea_trading,
-            mainbody_workarea_dividend_tracker
+            mainbody_workarea_dividend_tracker,
+            mainbody_workarea_trading
             ]
         self.icons_workareas = [
             icon_workarea_savings_plan,
-            icon_workarea_trading,
-            icon_workarea_dividend_tracker
+            icon_workarea_dividend_tracker,
+            icon_workarea_trading
             ]
         
         self.register_workareas()

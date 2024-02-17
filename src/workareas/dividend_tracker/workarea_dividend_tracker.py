@@ -41,9 +41,15 @@ class Workarea:
         self._change_observer_callbacks = []
         
         self.ui_mainbody.chart_dashboard = QtChart.QChart()
-        self.ui_mainbody.chart_dashboard.setTheme(QtChart.QChart.ChartThemeDark)
-        self.ui_mainbody.chart_dashboard.setAnimationOptions(QtChart.QChart.SeriesAnimations)
-        self.ui_mainbody.chartview_dashboard.setChart(self.ui_mainbody.chart_dashboard)
+        self.ui_mainbody.chart_dashboard.setTheme(
+            QtChart.QChart.ChartThemeDark
+            )
+        self.ui_mainbody.chart_dashboard.setAnimationOptions(
+            QtChart.QChart.SeriesAnimations
+            )
+        self.ui_mainbody.chartview_dashboard.setChart(
+            self.ui_mainbody.chart_dashboard
+            )
         
         for _w in [
                 self.ui_slidemenu.frame_header,
@@ -271,7 +277,9 @@ class Workarea:
             '{:,.2f} €'.format(net_dividends)
             )
         self.ui_mainbody.label_rotc_last_12_m.setText(
-            '{:,.2f} %'.format(self.dividend_portfolio.dividend_return_on_tied_capital_12_months)
+            '{:,.2f} %'.format(
+                self.dividend_portfolio.dividend_return_on_tied_capital_12_months
+                )
             )
         self.ui_mainbody.label_yoc_last_12_m.setText(
             '{:,.2f} %'.format(self.dividend_portfolio.yield_on_cost_12_months)
