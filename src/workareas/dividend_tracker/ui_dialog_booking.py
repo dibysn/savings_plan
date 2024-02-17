@@ -166,6 +166,7 @@ class Ui_Dialog(object):
         self.amount_per_share = QtWidgets.QDoubleSpinBox(self.frame_7)
         self.amount_per_share.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.amount_per_share.setProperty("showGroupSeparator", True)
+        self.amount_per_share.setDecimals(4)
         self.amount_per_share.setMaximum(90000.0)
         self.amount_per_share.setObjectName("amount_per_share")
         self.gridLayout_5.addWidget(self.amount_per_share, 6, 1, 1, 1)
