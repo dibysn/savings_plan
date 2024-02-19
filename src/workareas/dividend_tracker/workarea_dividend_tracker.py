@@ -384,9 +384,12 @@ class Workarea:
             ]
         x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
         annotation_text = 'Year {}:'.format(x_axis_categories[index])
+        _sum = 0.0
         for _l, _s in zip(_labels, _sets):
             annotation_text += '\n'
             annotation_text += _l.format(_s[index])
+            _sum += _s[index]
+        annotation_text += '\n{:>11,.2f} € (per month)'.format(_sum/12)
         chart_annotation.setText(annotation_text)
         
         y_axis = chart.axes(QtCore.Qt.Vertical)[0]
@@ -437,10 +440,13 @@ class Workarea:
         if button == QtWidgets.QMessageBox.Cancel:
             return
         
+        self.table_model_all_shares.layoutAboutToBeChanged.emit()
+        self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         self.set_default_values()
     
     def open_dialog_new_share(self):
         self.table_model_all_shares.layoutAboutToBeChanged.emit()
+        self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         dialog_share = DialogShare(
             self.dividend_portfolio, is_new_share = True, share = None
             )
@@ -454,6 +460,7 @@ class Workarea:
         
         if share:
             self.table_model_all_shares.layoutAboutToBeChanged.emit()
+            self.table_model_all_bookings.layoutAboutToBeChanged.emit()
             dialog_share = DialogShare(
                 self.dividend_portfolio, is_new_share = False, share = share
                 )
@@ -479,6 +486,7 @@ class Workarea:
             
             try:
                 self.table_model_all_shares.layoutAboutToBeChanged.emit()
+                self.table_model_all_bookings.layoutAboutToBeChanged.emit()
                 self.dividend_portfolio.remove_share(share)
             except Exception as err:
                 display_error(err)
@@ -602,7 +610,7 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
         1: ['type', 'Type', ' {} ', str],
         2: ['name', 'Name', ' {} ', str],
         3: ['isin', 'ISIN', ' {} ', str],
-        4: ['number_of_shares', '# Shares', ' {:d}', int],
+        4: ['number_of_shares', '# Shares', ' {:.2f}', float],
         5: ['amount_per_share', 'Amount/Share', ' {:,.2f} €', float],
         6: ['amount', 'Amount', ' {:,.2f} €', float],
         7: ['fee', 'Fee', ' {:,.2f} €', float],
@@ -709,7 +717,7 @@ class ShareTableModel(QtCore.QAbstractTableModel):
     COLUMN_INFO = {
         0: ['name', 'Name', ' {} ', str],
         1: ['isin', 'ISIN', ' {} ', str],
-        2: ['number_of_shares', '# Shares', ' {:d}', int],
+        2: ['number_of_shares', '# Shares', ' {:.2f}', float],
         3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €', float],
         4: ['tied_capital', 'Tied capital', ' {:,.2f} €', float],
         5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €', float],
@@ -881,7 +889,7 @@ class DialogBooking(QtWidgets.QDialog):
                 )
             )
         
-        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
+        self.ui_dialog.number_of_shares.valueChanged['double'].connect(
             lambda v: self.ui_dialog.total_amount.setText(
                 '{:,.2f} €'.format(v * self.ui_dialog.amount_per_share.value())
                 )
@@ -892,7 +900,7 @@ class DialogBooking(QtWidgets.QDialog):
                 )
             )
         
-        self.ui_dialog.number_of_shares.valueChanged['int'].connect(
+        self.ui_dialog.number_of_shares.valueChanged['double'].connect(
             lambda v: self.ui_dialog.total_value.setText(
                 '{:,.2f} €'.format(
                     v * self.ui_dialog.amount_per_share.value() + \
@@ -933,7 +941,10 @@ class DialogBooking(QtWidgets.QDialog):
         self._setup_gui()
         self.setWindowTitle('New')
         
-        for s in self.dividend_portfolio.all_shares:
+        for s in sorted(
+                self.dividend_portfolio.all_shares,
+                key = lambda v: v.name
+                ):
             self.ui_dialog.combo_box_share.addItem(' {}'.format(s.name), s)
         
         for booking_type in ['Buy', 'Sell', 'Dividend']:

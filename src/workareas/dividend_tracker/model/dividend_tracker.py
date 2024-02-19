@@ -43,6 +43,16 @@ class Portfolio:
             raise Exception('Share ISIN cannot be empty')
         share.name = _new_name
         share.isin = _new_isin
+        
+        for b in share.buy_orders:
+            b.name = _new_name
+            b.isin = _new_isin
+        for s in share.sell_orders:
+            s.name = _new_name
+            s.isin = _new_isin
+        for d in share.dividend_payments:
+            d.name = _new_name
+            d.isin = _new_isin
     
     def remove_share(self, share):
         try:
