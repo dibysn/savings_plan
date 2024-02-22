@@ -553,6 +553,8 @@ class Workarea:
                 self._notify_change_observer()
     
     def open_dialog_table_settings_share(self):
+        self.table_model_all_shares.layoutAboutToBeChanged.emit()
+        self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         dialog_table_settings = DialogTableSettings(
             ShareTableModel.COLUMN_INFO,
             ShareTableModel.USED_COLUMNS
@@ -564,6 +566,8 @@ class Workarea:
             self._notify_change_observer()
         
     def open_dialog_table_settings_booking(self):
+        self.table_model_all_shares.layoutAboutToBeChanged.emit()
+        self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         dialog_table_settings = DialogTableSettings(
             BookingsTableModel.COLUMN_INFO,
             BookingsTableModel.USED_COLUMNS
@@ -721,8 +725,9 @@ class ShareTableModel(QtCore.QAbstractTableModel):
         3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €', float],
         4: ['tied_capital', 'Tied capital', ' {:,.2f} €', float],
         5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €', float],
-        6: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %', float],
-        7: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %', float]
+        6: ['total_net_dividend_payments', 'Total net dividends',' {:,.2f} €', float],
+        7: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %', float],
+        8: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %', float]
         }
     
     USED_COLUMNS = list(COLUMN_INFO.keys())

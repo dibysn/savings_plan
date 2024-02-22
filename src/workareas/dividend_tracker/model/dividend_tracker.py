@@ -376,6 +376,19 @@ class Share:
     def realized_profit_loss(self):
         return self.number_of_shares * self.acquisition_price - self.tied_capital
     
+    @property
+    def total_net_dividend_payments(self):
+        if self.dividend_payments == []:
+            total_net_dividends = 0.0
+        else:
+            start_date = min(d.date for d in self.dividend_payments)
+            end_date = max(d.date for d in self.dividend_payments)
+            total_dividends = self.get_total_dividend_amount(start_date, end_date)
+            total_tax = self.get_total_dividend_tax(start_date, end_date)
+            total_fee = self.get_total_dividend_fee(start_date, end_date)
+            total_net_dividends = total_dividends - total_fee - total_tax
+        return total_net_dividends
+    
     def get_total_share_fee(self, start_date, end_date):
         fb = sum(
             b.fee for b in self.buy_orders
