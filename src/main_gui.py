@@ -24,6 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
         self.setup_gui()
         self._is_saved = False
+        self._filename = None
     
     def setup_gui(self):
         self.ui = Ui_MainWindow()
@@ -44,6 +45,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.new_savings_plan
             )
         
+        self.ui.btn_save.clicked.connect(
+            self.save_savings_plan
+            )
+        
         self.ui.btn_save_as.clicked.connect(
             self.save_savings_plan_as
             )
@@ -59,6 +64,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.btn_info.clicked.connect(
             self.show_information
             )
+        
+        self.shortcut = QtWidgets.QShortcut(
+            QtGui.QKeySequence(QtCore.Qt.CTRL + QtCore.Qt.Key_S), self
+            )
+        self.shortcut.activated.connect(self.shortcut_save_savings_plan)
+        
         
         #################
         # Registration of workareas
@@ -181,6 +192,40 @@ class MainWindow(QtWidgets.QMainWindow):
             wa.set_default_values()
         
         self.setWindowTitle('SAVINGS PLAN - New savings plan*')
+        
+        self._is_saved = False
+        self._filename = None
+        self.ui.btn_save.setEnabled(False)
+    
+    def _save(self, filename):
+        _data = []
+        for wa_name, wa in self.workareas.items():
+            _data.append(
+                (wa_name, wa.get_json_data_for_saving())
+                )
+        with open(filename, 'w') as f:
+            json.dump(_data, f)
+    
+    def save_savings_plan(self):
+        if not os.path.isfile(self._filename):
+            err = Exception(
+                ('File\n'
+                 '"{}"\n'
+                 'does not exist').format(self._filename)
+                )
+            display_error(err)
+            return
+        
+        try:
+            self._save(self._filename)
+        except Exception as err:
+            display_error(err)
+            return
+        
+        _name = os.path.splitext(os.path.basename(self._filename))[0]
+        self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
+        self._is_saved = True
+        self.ui.btn_save.setEnabled(False)
     
     def save_savings_plan_as(self):
         filename, _filter = QtWidgets.QFileDialog.getSaveFileName(
@@ -188,13 +233,7 @@ class MainWindow(QtWidgets.QMainWindow):
             options = QtWidgets.QFileDialog.DontUseNativeDialog)
         if filename:
             try:
-                _data = []
-                for wa_name, wa in self.workareas.items():
-                    _data.append(
-                        (wa_name, wa.get_json_data_for_saving())
-                        )
-                with open(filename, 'w') as f:
-                    json.dump(_data, f)
+                self._save(filename)
             except Exception as err:
                 display_error(err)
                 return
@@ -202,6 +241,14 @@ class MainWindow(QtWidgets.QMainWindow):
             _name = os.path.splitext(os.path.basename(filename))[0]
             self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
             self._is_saved = True
+            self._filename = filename
+            self.ui.btn_save.setEnabled(False)
+    
+    def shortcut_save_savings_plan(self):
+        if self._filename != None:
+            self.save_savings_plan()
+        else:
+            self.save_savings_plan_as()
     
     def load_savings_plan(self):
         if not self._is_saved:
@@ -240,12 +287,17 @@ class MainWindow(QtWidgets.QMainWindow):
             except Exception as err:
                 display_error(err)
                 return
+            
             _name = os.path.splitext(os.path.basename(filename))[0]
             self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
             self._is_saved = True
+            self._filename = filename
+            self.ui.btn_save.setEnabled(False)
     
     def savings_plan_changed(self):
         self._is_saved = False
+        if self._filename != None:
+            self.ui.btn_save.setEnabled(True)
         if self.windowTitle()[-1] != '*':
             self.setWindowTitle('{}*'.format(self.windowTitle()))
     
