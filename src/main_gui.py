@@ -70,7 +70,6 @@ class MainWindow(QtWidgets.QMainWindow):
             )
         self.shortcut.activated.connect(self.shortcut_save_savings_plan)
         
-        
         #################
         # Registration of workareas
         

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import functools
 from datetime import date as dt
 import math
 
@@ -7,6 +8,7 @@ class Portfolio:
     
     def __init__(self, all_shares = None):
         self.all_shares = all_shares if all_shares != None else []
+        
     
     def get_json_data_for_saving(self):
         _d = {
@@ -141,6 +143,79 @@ class Share:
         self.buy_orders = []
         self.sell_orders = []
         self.dividend_payments = []
+        
+        self._number_of_shares = None
+        self._acquisition_price = None
+        self._tied_capital = None
+        self._total_net_dividend_payments = None
+        self._dividends_last_12_months = None
+        
+        self._compute_values()
+    
+    def update_computation(func):
+        @functools.wraps(func)
+        def wrapper_update_computation(*args, **kwargs):
+            value = func(*args, **kwargs)
+            args[0]._compute_values()
+            return value
+        return wrapper_update_computation
+    
+    def _compute_values(self):
+        # Number of shares
+        buy = self.buy_orders
+        sell = self.sell_orders
+        self._number_of_shares = \
+            sum(b.number_of_shares for b in buy) - \
+            sum(s.number_of_shares for s in sell)
+        
+        # Acquisition price
+        if self.number_of_shares == 0:
+            self._acquisition_price = 0.0
+        else:
+            # Check how many shares have been sold
+            n_sell = sum(s.number_of_shares for s in self.sell_orders)
+            
+            # Get the index of the buy order which shares have not been fully sold
+            n_buy = 0
+            for n, b in enumerate(self.buy_orders):
+                n_buy += b.number_of_shares
+                if n_sell <= n_buy:
+                    break
+            
+            # Build list of all current shares in the portfolio
+            buy = [
+                Order(None, None, None, 0,
+                      n_buy - n_sell, self.buy_orders[n].amount_per_share,
+                      0, 0)
+                ]
+            buy = buy + self.buy_orders[n+1:]
+            
+            # Compute and print acquisition price
+            self._acquisition_price = \
+                sum(b.number_of_shares * b.amount_per_share for b in buy) / \
+                sum(b.number_of_shares for b in buy)
+        
+        # Ties capital
+        vb = sum(b.number_of_shares * b.amount_per_share for b in self.buy_orders)
+        vs = sum(s.number_of_shares * s.amount_per_share for s in self.sell_orders)
+        self._tied_capital = vb - vs
+        
+        # Total net dividend payments
+        if self.dividend_payments == []:
+            self._total_net_dividend_payments = 0.0
+        else:
+            start_date = min(d.date for d in self.dividend_payments)
+            end_date = max(d.date for d in self.dividend_payments)
+            total_dividends = self.get_total_dividend_amount(start_date, end_date)
+            total_tax = self.get_total_dividend_tax(start_date, end_date)
+            total_fee = self.get_total_dividend_fee(start_date, end_date)
+            self._total_net_dividend_payments = total_dividends - total_fee - total_tax
+        
+        # Dividends last 12 months
+        self._dividends_last_12_months = sum(
+            d.amount_per_share for d in self.dividend_payments
+            if (dt.today() - d.date).days < 365
+            )
     
     def get_json_data_for_saving(self):
         _buy = [
@@ -203,7 +278,7 @@ class Share:
                 )
         return s
     
-    def create_buy_order(self, date, number_of_shares,
+    def _create_buy_order(self, date, number_of_shares,
                          amount_per_share, fee, tax):
         o = Order(
             'Buy', self.name, self.isin, date, number_of_shares,
@@ -211,7 +286,7 @@ class Share:
             )
         self.buy_orders.append(o)
     
-    def update_buy_order(self, order, new_date, new_number_of_shares,
+    def _update_buy_order(self, order, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
         if self.number_of_shares < order.number_of_shares - new_number_of_shares:
             raise Exception('Not enough shares available')
@@ -223,7 +298,7 @@ class Share:
         order.tax = new_tax
         order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
     
-    def delete_buy_order(self, order):
+    def _delete_buy_order(self, order):
         if self.number_of_shares < order.number_of_shares:
             raise Exception('Not enough shares available')
         try:
@@ -231,7 +306,7 @@ class Share:
         except:
             raise Exception('Order does not exist')
     
-    def create_sell_order(self, date, number_of_shares,
+    def _create_sell_order(self, date, number_of_shares,
                           amount_per_share, fee, tax):
         if self.number_of_shares < number_of_shares:
             raise Exception('Not enough shares available')
@@ -241,7 +316,7 @@ class Share:
             )
         self.sell_orders.append(o)
     
-    def update_sell_order(self, order, new_date, new_number_of_shares,
+    def _update_sell_order(self, order, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
         if self.number_of_shares < new_number_of_shares - order.number_of_shares:
             raise Exception('Not enough shares available')
@@ -253,13 +328,13 @@ class Share:
         order.tax = new_tax
         order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
         
-    def delete_sell_order(self, order):
+    def _delete_sell_order(self, order):
         try:
             self.sell_orders.remove(order)
         except:
             raise Exception('Order does not exist')
     
-    def create_dividend(self, date, number_of_shares,
+    def _create_dividend(self, date, number_of_shares,
                          amount_per_share, fee, tax):
         
         d = Dividend(
@@ -268,7 +343,7 @@ class Share:
             )
         self.dividend_payments.append(d)
     
-    def update_dividend(self, order, new_date, new_number_of_shares,
+    def _update_dividend(self, order, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
         order.date = new_date
         order.number_of_shares = new_number_of_shares
@@ -278,99 +353,73 @@ class Share:
         order.tax = new_tax
         order.total_cost = new_amount_per_share * new_number_of_shares + new_fee + new_tax
     
-    def delete_dividend(self, dividend):
+    def _delete_dividend(self, dividend):
         try:
             self.dividend_payments.remove(dividend)
         except:
             raise Exception('Dividend does not exist')
     
+    @update_computation
     def create_booking(self, booking_type, date, number_of_shares,
                          amount_per_share, fee, tax):
         if booking_type == 'Buy':
-            self.create_buy_order(
+            self._create_buy_order(
                 date, number_of_shares, amount_per_share, fee, tax
                 )
         elif booking_type == 'Sell':
-            self.create_sell_order(
+            self._create_sell_order(
                 date, number_of_shares, amount_per_share, fee, tax
                 )
         elif booking_type == 'Dividend':
-            self.create_dividend(
+            self._create_dividend(
                 date, number_of_shares, amount_per_share, fee, tax
                 )
         else:
             raise Exception('Booking type does not exist')
     
+    @update_computation
     def update_booking(self, booking, new_date, new_number_of_shares,
                          new_amount_per_share, new_fee, new_tax):
         if booking.type == 'Buy':
-            self.update_buy_order(
+            self._update_buy_order(
                 booking, new_date, new_number_of_shares,
                 new_amount_per_share, new_fee, new_tax
                 )
         elif booking.type == 'Sell':
-            self.update_sell_order(
+            self._update_sell_order(
                 booking, new_date, new_number_of_shares,
                 new_amount_per_share, new_fee, new_tax
                 )
         elif booking.type == 'Dividend':
-            self.update_dividend(
+            self._update_dividend(
                 booking, new_date, new_number_of_shares,
                 new_amount_per_share, new_fee, new_tax
                 )
         else:
             raise Exception('Booking type does not exist')
     
+    @update_computation
     def delete_booking(self, booking):
         if booking.type == 'Buy':
-            self.delete_buy_order(booking)
+            self._delete_buy_order(booking)
         elif booking.type == 'Sell':
-            self.delete_sell_order(booking)
+            self._delete_sell_order(booking)
         elif booking.type == 'Dividend':
-            self.delete_dividend(booking)
+            self._delete_dividend(booking)
         else:
             raise Exception('Booking type does not exist')
     
     @property
     def number_of_shares(self):
-        buy = self.buy_orders
-        sell = self.sell_orders
-        n = sum(b.number_of_shares for b in buy) - sum(s.number_of_shares for s in sell)
-        return n
+        return self._number_of_shares
     
     @property
     def acquisition_price(self):
-        if self.number_of_shares == 0:
-            p = 0.0
-        else:
-            # Check how many shares have been sold
-            n_sell = sum(s.number_of_shares for s in self.sell_orders)
-            
-            # Get the index of the buy order which shares have not been fully sold
-            n_buy = 0
-            for n, b in enumerate(self.buy_orders):
-                n_buy += b.number_of_shares
-                if n_sell <= n_buy:
-                    break
-            
-            # Build list of all current shares in the portfolio
-            buy = [
-                Order(None, None, None, 0,
-                      n_buy - n_sell, self.buy_orders[n].amount_per_share,
-                      0, 0)
-                ]
-            buy = buy + self.buy_orders[n+1:]
-            
-            # Compute and print acquisition price
-            p = sum(b.number_of_shares * b.amount_per_share for b in buy) / \
-                sum(b.number_of_shares for b in buy)
-        return p
+        return self._acquisition_price
     
     @property
     def tied_capital(self):
-        vb = sum(b.number_of_shares * b.amount_per_share for b in self.buy_orders)
-        vs = sum(s.number_of_shares * s.amount_per_share for s in self.sell_orders)
-        return vb - vs
+        return self._tied_capital
     
     @property
     def realized_profit_loss(self):
@@ -378,16 +427,7 @@ class Share:
     
     @property
     def total_net_dividend_payments(self):
-        if self.dividend_payments == []:
-            total_net_dividends = 0.0
-        else:
-            start_date = min(d.date for d in self.dividend_payments)
-            end_date = max(d.date for d in self.dividend_payments)
-            total_dividends = self.get_total_dividend_amount(start_date, end_date)
-            total_tax = self.get_total_dividend_tax(start_date, end_date)
-            total_fee = self.get_total_dividend_fee(start_date, end_date)
-            total_net_dividends = total_dividends - total_fee - total_tax
-        return total_net_dividends
+        return self._total_net_dividend_payments
     
     def get_total_share_fee(self, start_date, end_date):
         fb = sum(
@@ -421,10 +461,7 @@ class Share:
     
     @property
     def dividends_last_12_months(self):
-        return sum(
-            d.amount_per_share for d in self.dividend_payments
-            if (dt.today() - d.date).days < 365
-            )
+        return self._dividends_last_12_months
     
     @property
     def dividend_return_on_tied_capital_12_months(self):
@@ -486,154 +523,3 @@ class Dividend:
         self.fee = fee
         self.tax = tax
         self.total_cost = self.amount + fee + tax
-
-if __name__ == '__main__':
-    s1 = Share('DE0012331', 'ShareA')
-    s2 = Share('DE0044312', 'ShareB')
-    
-    p = Portfolio()
-    p.add_share(s1)
-    p.add_share(s2)
-    
-    orders_s1 = [
-        ('buy',  dt(2022, 1, 2),    5, 10, 10,  0),
-        ('buy',  dt(2022, 2, 10),  10, 15, 10,  0),
-        ('buy',  dt(2022, 5, 11),  13,  3, 10,  0),
-        ('sell', dt(2022, 9, 23),  10, 12, 10, 13.20),
-        ('buy',  dt(2023, 2, 11),   5, 20, 12,  0),
-        ('sell', dt(2023, 2, 15),  11,  8, 12, 12.10),
-        ('buy',  dt(2023, 4, 2),   30,  8, 11,  1.10),
-        ('sell', dt(2023, 11, 29), 10,  8, 12, 10.50)
-        ]
-    
-    dividends_s1 = [
-        (dt(2022, 2, 1),    3, 1.6, 1,  2),
-        (dt(2022, 6, 5),   13, 1.6, 3,  0),
-        (dt(2022, 9, 18),  13, 1.6, 0,  0),
-        (dt(2022, 12, 1),  18, 1.6, 1, 10),
-        (dt(2023, 2, 1),   18, 1.7, 5, 11),
-        (dt(2023, 6, 19),  25, 1.7, 0,  9),
-        (dt(2023, 10, 12), 15, 1.7, 0,  8),
-        (dt(2023, 12, 6),  15, 1.7, 1,  3),
-        ]
-    
-    orders_s2 = [
-        ('buy',  dt(2022, 8, 11),  35,  7,  9,  1),
-        ('buy',  dt(2022, 9, 9),   18, 10,  7,  0),
-        ('buy',  dt(2023, 3, 17),  13,  8, 10,  1.30),
-        ('sell', dt(2023, 3, 22),  10, 11, 10, 13.20)
-        ]
-    
-    dividends_s2 = [
-        (dt(2022, 9, 1),   10, 0.5, 1, 10),
-        (dt(2023, 2, 2),   10, 0.5, 1, 10),
-        (dt(2023, 4, 7),   30, 0.6, 8, 19),
-        (dt(2023, 8, 18),  32, 0.6, 0,  8),
-        (dt(2023, 11, 8),  33, 0.6, 1,  0),
-        ]
-    
-    for o in orders_s1:
-        if o[0] == 'buy':
-            s1.create_buy_order(o[1], o[2], o[3], o[4], o[5])
-        else:
-            s1.create_sell_order(o[1], o[2], o[3], o[4], o[5])
-    
-    for d in dividends_s1:
-        s1.create_dividend(d[0], d[1], d[2], d[3], d[4])
-    
-    for o in orders_s2:
-        if o[0] == 'buy':
-            s2.create_buy_order(o[1], o[2], o[3], o[4], o[5])
-        else:
-            s2.create_sell_order(o[1], o[2], o[3], o[4], o[5])
-    
-    for d in dividends_s2:
-        s2.create_dividend(d[0], d[1], d[2], d[3], d[4])
-    
-    start_date = dt(2022, 12, 1)
-    end_date = dt(2023, 10, 12)
-    
-    # start_date = dt(2020, 12, 1)
-    # end_date = dt(2024, 10, 12)
-    
-    print('ShareA')
-    # Expected: 32
-    print('  Number of shares: {}'.format(s1.number_of_shares))
-    # Expected: 8.75
-    print('  Acquisition price: {:.2f} €'.format(s1.acquisition_price))
-    # Expected: 291.00
-    print('  Current tied capital: {:.2f} €'.format(s1.tied_capital))
-    # Expected: -11.0
-    print('  Profit/loss: {:.2f} €'.format(s1.realized_profit_loss))
-    # Expected: 77.71
-    print('  Yield on cost (12 months): {:.2f} %'.format(s1.yield_on_cost_12_months))
-    # Expected: 74,78
-    print('  Dividend ROTC (12 months): {:.2f} %'.format(s1.dividend_return_on_tied_capital_12_months))
-    
-    
-    print()
-    
-    # Expected: 35.00
-    print('  Total share fees: {:.2f} €'.format(s1.get_total_share_fee(start_date, end_date)))
-    # Expected: 13.20
-    print('  Total share tax: {:.2f} €'.format(s1.get_total_share_tax(start_date, end_date)))
-    # Expected: 127.40
-    print('  Total dividends received: {:.2f} €'.format(s1.get_total_dividend_amount(start_date, end_date)))
-    # Expected: 6.00
-    print('  Total dividend fees: {:.2f} €'.format(s1.get_total_dividend_fee(start_date, end_date)))
-    # Expected: 38.00
-    print('  Total dividend tax: {:.2f} €'.format(s1.get_total_dividend_tax(start_date, end_date)))
-    
-    print()
-    
-    print('ShareB')
-    # Expected: 56
-    print('  Number of shares: {}'.format(s2.number_of_shares))
-    # Expected: 8.20
-    print('  Acquisition price: {:.2f} €'.format(s2.acquisition_price))
-    # Expected: 419.0
-    print('  Current tied capital: {:.2f} €'.format(s2.tied_capital))
-    # Expected: 40.0
-    print('  Profit/loss: {:.2f} €'.format(s2.realized_profit_loss))
-    # Expected: 28.06
-    print('  Yield on cost (12 months): {:.2f} %'.format(s2.yield_on_cost_12_months))
-    # Expected: 30.74
-    print('  Dividend ROTC (12 months): {:.2f} %'.format(s2.dividend_return_on_tied_capital_12_months))
-    
-    print()
-    
-    # Expected: 20.0
-    print('  Total share fees: {:.2f} €'.format(s2.get_total_share_fee(start_date, end_date)))
-    # Expected: 14.50
-    print('  Total share tax: {:.2f} €'.format(s2.get_total_share_tax(start_date, end_date)))
-    # Expected: 42.20
-    print('  Total dividends received: {:.2f} €'.format(s2.get_total_dividend_amount(start_date, end_date)))
-    # Expected: 9
-    print('  Total dividend fees: {:.2f} €'.format(s2.get_total_dividend_fee(start_date, end_date)))
-    # Expected: 37
-    print('  Total dividend tax: {:.2f} €'.format(s2.get_total_dividend_tax(start_date, end_date)))
-    
-    print()
-    print('Portfolio')    
-    print('  Current tied capital: {:.2f} €'.format(p.tied_capital))
-    print('  Yield on cost (12 months): {:.2f} %'.format(p.yield_on_cost_12_months))
-    print('  Dividend ROTC (12 months): {:.2f} %'.format(p.dividend_return_on_tied_capital_12_months))
-    print('  Total share fees: {:.2f} €'.format(p.get_total_share_fee(start_date, end_date)))
-    print('  Total share tax: {:.2f} €'.format(p.get_total_share_tax(start_date, end_date)))
-    print('  Total dividends received: {:.2f} €'.format(p.get_total_dividend_amount(start_date, end_date)))
-    print('  Total dividend fees: {:.2f} €'.format(p.get_total_dividend_fee(start_date, end_date)))
-    print('  Total dividend tax: {:.2f} €'.format(p.get_total_dividend_tax(start_date, end_date)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
