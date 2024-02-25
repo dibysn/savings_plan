@@ -206,25 +206,21 @@ class MainWindow(QtWidgets.QMainWindow):
             json.dump(_data, f)
     
     def save_savings_plan(self):
-        if not os.path.isfile(self._filename):
-            err = Exception(
-                ('File\n'
-                 '"{}"\n'
-                 'does not exist').format(self._filename)
-                )
-            display_error(err)
-            return
-        
         try:
+            if not os.path.isfile(self._filename):
+                raise Exception(
+                    ('File\n'
+                     '"{}"\n'
+                     'does not exist').format(self._filename)
+                    )
             self._save(self._filename)
         except Exception as err:
             display_error(err)
-            return
-        
-        _name = os.path.splitext(os.path.basename(self._filename))[0]
-        self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
-        self._is_saved = True
-        self.ui.btn_save.setEnabled(False)
+        else:
+            _name = os.path.splitext(os.path.basename(self._filename))[0]
+            self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
+            self._is_saved = True
+            self.ui.btn_save.setEnabled(False)
     
     def save_savings_plan_as(self):
         filename, _filter = QtWidgets.QFileDialog.getSaveFileName(
@@ -235,13 +231,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._save(filename)
             except Exception as err:
                 display_error(err)
-                return
-            
-            _name = os.path.splitext(os.path.basename(filename))[0]
-            self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
-            self._is_saved = True
-            self._filename = filename
-            self.ui.btn_save.setEnabled(False)
+            else:
+                _name = os.path.splitext(os.path.basename(filename))[0]
+                self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
+                self._is_saved = True
+                self._filename = filename
+                self.ui.btn_save.setEnabled(False)
     
     def shortcut_save_savings_plan(self):
         if self._filename != None:
@@ -269,6 +264,10 @@ class MainWindow(QtWidgets.QMainWindow):
             options = QtWidgets.QFileDialog.DontUseNativeDialog)
         
         if filename:
+            self._filename = filename
+            _name = os.path.splitext(os.path.basename(filename))[0]
+            _cursor = self.cursor()
+            self.setCursor(QtCore.Qt.WaitCursor)
             try:
                 with open(filename, 'r') as f:
                     _l = json.load(f)
@@ -282,16 +281,18 @@ class MainWindow(QtWidgets.QMainWindow):
                     try:
                         self.workareas[_wa_name].load_from_json_data(_wa_data)
                     except:
-                        raise Exception('Loading failed (data for Workarea "{}" caused an error)'.format(_wa_name))
+                        raise Exception('Loading failed (data for workarea "{}" caused an error)'.format(_wa_name))
             except Exception as err:
+                self._is_saved = False
+                self.ui.btn_save.setEnabled(True)
+                self.setWindowTitle('SAVINGS PLAN - {}*'.format(_name))
                 display_error(err)
-                return
-            
-            _name = os.path.splitext(os.path.basename(filename))[0]
-            self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
-            self._is_saved = True
-            self._filename = filename
-            self.ui.btn_save.setEnabled(False)
+            else:
+                self._is_saved = True
+                self.ui.btn_save.setEnabled(False)
+                self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
+            finally:
+                self.setCursor(_cursor)
     
     def savings_plan_changed(self):
         self._is_saved = False
