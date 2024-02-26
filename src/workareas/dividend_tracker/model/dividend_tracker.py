@@ -195,7 +195,7 @@ class Share:
                 sum(b.number_of_shares * b.amount_per_share for b in buy) / \
                 sum(b.number_of_shares for b in buy)
         
-        # Ties capital
+        # Tied capital
         vb = sum(b.number_of_shares * b.amount_per_share for b in self.buy_orders)
         vs = sum(s.number_of_shares * s.amount_per_share for s in self.sell_orders)
         self._tied_capital = vb - vs

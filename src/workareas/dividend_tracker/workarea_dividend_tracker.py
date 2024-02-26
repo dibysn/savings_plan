@@ -247,6 +247,7 @@ class Workarea:
             self.ui_mainbody.spin_box_start_year.setEnabled(False)
             self.ui_mainbody.spin_box_end_year.setEnabled(False)
             net_dividends = 0.0
+            gross_dividends = 0.0
         else:
             self.ui_mainbody.spin_box_start_year.setEnabled(True)
             self.ui_mainbody.spin_box_end_year.setEnabled(True)
@@ -256,10 +257,10 @@ class Workarea:
             dividend_tax = self.dividend_portfolio.get_total_dividend_tax(
                 dt(_years[0], 1, 1), dt(_years[-1], 12, 31)
                 )
-            dividends = self.dividend_portfolio.get_total_dividend_amount(
+            gross_dividends = self.dividend_portfolio.get_total_dividend_amount(
                 dt(_years[0], 1, 1), dt(_years[-1], 12, 31)
                 )
-            net_dividends = dividends - dividend_tax - dividend_fee
+            net_dividends = gross_dividends - dividend_tax - dividend_fee
         self.ui_mainbody.spin_box_start_year.setMinimum(_years[0])
         self.ui_mainbody.spin_box_start_year.setMaximum(_years[-1])
         self.ui_mainbody.spin_box_start_year.setValue(_years[0])
@@ -270,8 +271,8 @@ class Workarea:
         self.ui_mainbody.label_tied_capital.setText(
             '{:,.2f} €'.format(self.dividend_portfolio.tied_capital)
             )
-        self.ui_mainbody.label_realized_profit_loss.setText(
-            '{:,.2f} €'.format(self.dividend_portfolio.realized_profit_loss)
+        self.ui_mainbody.label_total_gross_dividends.setText(
+            '{:,.2f} €'.format(gross_dividends)
             )
         self.ui_mainbody.label_total_net_dividends.setText(
             '{:,.2f} €'.format(net_dividends)
@@ -283,6 +284,9 @@ class Workarea:
             )
         self.ui_mainbody.label_yoc_last_12_m.setText(
             '{:,.2f} %'.format(self.dividend_portfolio.yield_on_cost_12_months)
+            )
+        self.ui_mainbody.label_realized_profit_loss.setText(
+            '{:,.2f} €'.format(self.dividend_portfolio.realized_profit_loss)
             )
     
     def _update_staked_bar_chart(self):
