@@ -145,7 +145,7 @@ class Workarea:
             TradingTableModel.USED_COLUMNS = data['Columns']
         except Exception as err:
             display_error(err)
-            return
+            raise err
         
         self.trading_portfolio = _trading_portfolio
         self.table_model_trading_active.trading_portfolio = self.trading_portfolio

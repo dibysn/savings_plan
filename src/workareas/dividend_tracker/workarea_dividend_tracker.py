@@ -199,7 +199,7 @@ class Workarea:
             BookingsTableModel.USED_COLUMNS = data['Columns booking']
         except Exception as err:
             display_error(err)
-            return
+            raise err
         
         self.dividend_portfolio = _dividend_portfolio
         self.table_model_all_bookings.dividend_portfolio = self.dividend_portfolio

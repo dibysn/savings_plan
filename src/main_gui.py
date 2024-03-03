@@ -269,28 +269,55 @@ class MainWindow(QtWidgets.QMainWindow):
             _cursor = self.cursor()
             self.setCursor(QtCore.Qt.WaitCursor)
             try:
-                with open(filename, 'r') as f:
-                    _l = json.load(f)
-
-                if not isinstance(_l, list):
-                    raise Exception('Data in "{}" not readale'.format(filename))
+                try:
+                    with open(filename, 'r') as f:
+                        _l = json.load(f)
+                except Exception as e:
+                    raise Exception(
+                        ('Data in "{}" not readale '
+                         '({})'.format(filename, e))
+                        )
                 
-                for _wa_name, _wa_data in _l:
-                    if not isinstance(_wa_data, dict):
-                        raise Exception('Data in "{}" not readale'.format(filename))
-                    try:
-                        self.workareas[_wa_name].load_from_json_data(_wa_data)
-                    except:
-                        raise Exception('Loading failed (data for workarea "{}" caused an error)'.format(_wa_name))
+                if not isinstance(_l, list):
+                    raise Exception(
+                        ('Data in "{}" not readale '
+                         '(wrong instance)').format(filename)
+                        )
+                
+                for _wa_name, _ in _l:
+                    if _wa_name not in self.workareas.keys():
+                        raise Exception(
+                            ('Data in "{}" not readale '
+                             '(wrong workareas)').format(filename)
+                            )
             except Exception as err:
-                self._is_saved = False
-                self.ui.btn_save.setEnabled(True)
-                self.setWindowTitle('SAVINGS PLAN - {}*'.format(_name))
                 display_error(err)
             else:
-                self._is_saved = True
-                self.ui.btn_save.setEnabled(False)
-                self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
+                errors = []
+                for _wa_name, _wa_data in _l:
+                    try:
+                        if not isinstance(_wa_data, dict):
+                            raise Exception('Data in "{}" not readale'.format(filename))
+                        self.workareas[_wa_name].load_from_json_data(_wa_data)
+                    except:
+                        self.workareas[_wa_name].set_default_values()
+                        errors.append(
+                            Exception(
+                                ('Loading failed (data for workarea "{}" caused an error)\n'
+                                 'Default values will be used for this workarea'
+                                 ).format(_wa_name)
+                                )
+                            )
+                if errors != []:
+                    self._is_saved = False
+                    self.ui.btn_save.setEnabled(True)
+                    self.setWindowTitle('SAVINGS PLAN - {}*'.format(_name))
+                    for err in errors:
+                        display_error(err)
+                else:
+                    self._is_saved = True
+                    self.ui.btn_save.setEnabled(False)
+                    self.setWindowTitle('SAVINGS PLAN - {}'.format(_name))
             finally:
                 self.setCursor(_cursor)
     

@@ -12,6 +12,13 @@ def round_up(n, decimals = 0):
     multiplier = 10 ** decimals
     return math.ceil(2 * n * multiplier) / multiplier / 2
 
+def display_error(err):
+    msg_box = QtWidgets.QMessageBox()
+    msg_box.setIcon(QtWidgets.QMessageBox.Critical)
+    msg_box.setText(str(err))
+    msg_box.setStandardButtons(QtWidgets.QMessageBox.Ok)
+    msg_box.exec()
+
 class IconWorkarea:
     def __init__(self):
         self.icon = QtGui.QIcon()
@@ -320,7 +327,11 @@ class Workarea:
         return self.savings_sim.get_json_data_for_saving()
     
     def load_from_json_data(self, data):
-        _savings_sim = SavingsSimulation.load_from_json_data(data)
+        try:
+            _savings_sim = SavingsSimulation.load_from_json_data(data)
+        except Exception as err:
+            display_error(err)
+            raise err
         
         self.ui_slidemenu.current_age.setValue(_savings_sim.current_age)
         self.ui_slidemenu.retirement_age.setValue(_savings_sim.retirement_age)
