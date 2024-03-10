@@ -190,7 +190,7 @@ class Share:
                 ]
             buy = buy + self.buy_orders[n+1:]
             
-            # Compute and print acquisition price
+            # Compute acquisition price
             self._acquisition_price = \
                 sum(b.number_of_shares * b.amount_per_share for b in buy) / \
                 sum(b.number_of_shares for b in buy)
