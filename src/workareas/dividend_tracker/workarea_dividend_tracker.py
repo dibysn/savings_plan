@@ -963,14 +963,24 @@ class DialogBooking(QtWidgets.QDialog):
         self.ui_dialog.label_name.setText('  {}'.format(s.name))
         self.ui_dialog.label_isin.setText('  {}'.format(s.isin))
         
-        def fill_name_isin_info(i):
+        def pre_fill_data():
+            i = self.ui_dialog.combo_box_share.currentIndex()
             s = self.ui_dialog.combo_box_share.itemData(i)
             self.ui_dialog.label_name.setText('  {}'.format(s.name))
             self.ui_dialog.label_isin.setText('  {}'.format(s.isin))
+            if self.ui_dialog.combo_box_type.currentText() in ['Sell', 'Dividend']:
+                self.ui_dialog.number_of_shares.setValue(s.number_of_shares)
+            else:
+                self.ui_dialog.number_of_shares.setValue(0.0)
         
         self.ui_dialog.combo_box_share.currentIndexChanged.connect(
-            fill_name_isin_info
+            pre_fill_data
             )
+        self.ui_dialog.combo_box_type.currentIndexChanged.connect(
+            pre_fill_data
+            )
+        
+        self.ui_dialog.date_booking.setDate(dt.today())
         
         self.ui_dialog.total_amount.setText(
             '{:,.2f} €'.format(

@@ -182,6 +182,7 @@ class Ui_Dialog(object):
         self.label_6.setObjectName("label_6")
         self.gridLayout_5.addWidget(self.label_6, 8, 0, 1, 1)
         self.date_booking = QtWidgets.QDateEdit(self.frame_7)
+        self.date_booking.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignTrailing|QtCore.Qt.AlignVCenter)
         self.date_booking.setDateTime(QtCore.QDateTime(QtCore.QDate(2024, 1, 1), QtCore.QTime(0, 0, 0)))
         self.date_booking.setCalendarPopup(True)
         self.date_booking.setObjectName("date_booking")
