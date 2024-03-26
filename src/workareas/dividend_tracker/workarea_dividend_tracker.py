@@ -381,11 +381,13 @@ class Workarea:
             )
         
         _sets = chart.series()[0].barSets()
-        _labels = [
-            '{:>11,.2f} € (Net dividends)',
-            '{:>11,.2f} € (Tax)',
-            '{:>11,.2f} € (Fees)'
-            ]
+        
+        _labels = ['{:>11,.2f} € (Net dividends)']
+        if self.ui_mainbody.check_box_tax.isChecked():
+            _labels.append('{:>11,.2f} € (Tax)')
+        if self.ui_mainbody.check_box_fee.isChecked():
+            _labels.append('{:>11,.2f} € (Fees)')
+        
         x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
         annotation_text = 'Year {}:'.format(x_axis_categories[index])
         _sum = 0.0
