@@ -2,6 +2,12 @@
 
 import functools
 
+class Saving:
+    def __init__(self, year, saving, value):
+        self.year = year
+        self.saving = saving
+        self.value = value
+
 class SavingsSimulation:
     
     def __init__(self,
@@ -47,6 +53,17 @@ class SavingsSimulation:
         
         self._is_saved = False
         self._compute_simulation()
+        
+        self.savings = {}
+    
+    def create_saving(self, year, saving, value):
+        self.savings[year] = (saving, value)
+    
+    def update_saving(self, year, new_saving, new_value):
+        self.savings[year] = (new_saving, new_value)
+    
+    def delete_saving(self, year):
+        del self.savings[year]
     
     def update_computation(func):
         @functools.wraps(func)

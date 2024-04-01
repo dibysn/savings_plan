@@ -386,7 +386,7 @@ class Workarea:
         if self.ui_mainbody.check_box_tax.isChecked():
             _labels.append('{:>11,.2f} € (Tax)')
         if self.ui_mainbody.check_box_fee.isChecked():
-            _labels.append('{:>11,.2f} € (Fees)')
+            _labels.append('{:>11,.2f} € (Fee)')
         
         x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
         annotation_text = 'Year {}:'.format(x_axis_categories[index])

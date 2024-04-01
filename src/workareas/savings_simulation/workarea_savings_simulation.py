@@ -5,6 +5,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui, QtChart
 from src.workareas.savings_simulation.ui_mainbody_savings_simulation import Ui_Form as Ui_Form_Mainbody
 from src.workareas.savings_simulation.ui_slidemenu_savings_simulation import Ui_Form as Ui_Form_Slidemenu
 
+from src.workareas.savings_simulation.ui_dialog_savings import Ui_Dialog as Ui_Dialog_Savings
+
 import math
 from src.workareas.savings_simulation.model.savings_simulation import SavingsSimulation
 
@@ -92,6 +94,10 @@ class Workarea:
             )
         self.ui_slidemenu.expected_age.valueChanged.connect(
             lambda n: self.ui_slidemenu.retirement_age.setMaximum(n-1)
+            )
+        
+        self.ui_slidemenu.button_savings.clicked.connect(
+            self.open_dialog_savings
             )
         
         self.ui_slidemenu.solidarity_tax.valueChanged['double'].connect(self.update_simulation)
@@ -353,6 +359,95 @@ class Workarea:
             self.ui_mainbody.chart_without_tax, self.savings_sim.yearly_savings_amount_without_tax)
         self._update_stacked_bar_chart(
             self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
+    
+    def open_dialog_savings(self):
+        dialog_savings = DialogSavings(self.savings_sim.savings)
+        dialog_savings.exec()
+        
+class DialogSavings(QtWidgets.QDialog):
+    def __init__(self, savings):
+        super(DialogSavings, self).__init__()
+        self.savings = savings
+        self.setup_gui()
+    
+    def setup_gui(self):
+        self.ui_dialog = Ui_Dialog_Savings()
+        self.ui_dialog.setupUi(self)
+        self.setWindowTitle('Savings')
+        
+        self.table_model_savings = SavingsTableModel(
+            self.savings
+            )
+        self.ui_dialog.table_view_savings.setModel(
+            self.table_model_savings
+            )
+        self.ui_dialog.table_view_savings.setSelectionBehavior(
+            QtWidgets.QTableView.SelectRows
+            )
+        self.ui_dialog.table_view_savings.setSelectionMode(
+            QtWidgets.QTableView.SingleSelection
+            )
+        self.ui_dialog.table_view_savings.horizontalHeader().setStretchLastSection(True)
+        
+        self._update_table()
+        
+    def _update_table(self):
+        self.table_model_savings.layoutChanged.emit()
+        for i in range(self.table_model_savings.columnCount(None)):
+            self.ui_dialog.table_view_savings.resizeColumnToContents(i)
+        
+
+class SavingsTableModel(QtCore.QAbstractTableModel):
+    
+    GET_DATA_ROLE = QtCore.Qt.UserRole
+    
+    def __init__(self, savings):
+        super(SavingsTableModel, self).__init__()
+        self.savings = savings
+    
+    def data(self, index, role):
+        if role == QtCore.Qt.DisplayRole:
+            
+            row = index.row()
+            col = index.column()
+            
+            if col == 0:
+                value_str = '{}'.format(row)
+            elif col == 1:
+                value_str = ' {:.2f} €'.format(self.savings[row][0])
+            elif col == 2:
+                value_str = ' {:.2f} €'.format(self.savings[row][1])
+            
+            return value_str
+        
+        if role == QtCore.Qt.TextAlignmentRole:
+            col = index.column()
+            if col == 0:
+                return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
+            else:
+                return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
+        
+        if role == self.GET_DATA_ROLE:
+            saving = self.savings[index.row()]
+            return saving
+    
+    def rowCount(self, index):
+        return len(self.savings)
+    
+    def columnCount(self, index):
+        return 3
+    
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                if section == 0:
+                    header_str = '  Year  '
+                elif section == 1:
+                    header_str = '  Savings  '
+                elif section == 2:
+                    header_str = '  Value  '
+               
+                return header_str
 
 def get_workarea_icon_and_widgets():
     icon = IconWorkarea().icon
