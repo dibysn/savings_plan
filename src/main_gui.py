@@ -39,7 +39,7 @@ class MainWindow(QtWidgets.QMainWindow):
             )
         
         self.setWindowTitle('SAVINGS PLAN - New savings plan*')
-        self.ui.lbl_version.setText('Version 2.0')
+        self.ui.lbl_version.setText('Version 2.1')
         
         self.ui.btn_new.clicked.connect(
             self.new_savings_plan

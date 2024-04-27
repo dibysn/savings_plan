@@ -6,6 +6,7 @@ from src.workareas.savings_simulation.ui_mainbody_savings_simulation import Ui_F
 from src.workareas.savings_simulation.ui_slidemenu_savings_simulation import Ui_Form as Ui_Form_Slidemenu
 
 from src.workareas.savings_simulation.ui_dialog_savings import Ui_Dialog as Ui_Dialog_Savings
+from src.workareas.savings_simulation.ui_dialog_new_update_saving import Ui_Dialog as Ui_Dialog_New_Update_Saving
 
 import math
 from src.workareas.savings_simulation.model.savings_simulation import SavingsSimulation
@@ -78,10 +79,7 @@ class Workarea:
         
         self._update_text_all_labels()
         
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_without_tax, self.savings_sim.yearly_savings_amount_without_tax)
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
+        self._update_all_charts()
         
         self.ui_slidemenu.retirement_age.valueChanged.connect(
             lambda n: self.ui_slidemenu.current_age.setMaximum(n-1)
@@ -115,6 +113,7 @@ class Workarea:
         self.ui_slidemenu.expected_age.valueChanged['int'].connect(self.update_simulation)
         self.ui_slidemenu.current_age.valueChanged['int'].connect(self.update_simulation)
         self.ui_slidemenu.church_tax.valueChanged['double'].connect(self.update_simulation)
+        self.ui_slidemenu.show_real_savings_check_box.clicked['bool'].connect(self._update_all_charts)
         
         self.chart_without_tax_annotation = QtWidgets.QGraphicsSimpleTextItem(
             self.ui_mainbody.chart_without_tax)
@@ -155,6 +154,13 @@ class Workarea:
         self.ui_slidemenu.notes.clear()
         self.ui_slidemenu.include_tax_check_box.setChecked(False)
         self.ui_slidemenu.include_tax_check_box.clicked.emit(False)
+        
+        try:
+            self.savings_sim.real_savings.clear_all()
+            self._update_all_charts()
+        except:
+            pass
+        
         self._notify_change_observer()
     
     def _update_text_all_labels(self):
@@ -204,6 +210,12 @@ class Workarea:
             '{:.2f}%'.format(self.savings_sim.total_tax_rate * 100.0)
             )
     
+    def _update_all_charts(self):
+        self._update_stacked_bar_chart(
+            self.ui_mainbody.chart_without_tax, self.savings_sim.yearly_savings_amount_without_tax)
+        self._update_stacked_bar_chart(
+            self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
+    
     def _update_stacked_bar_chart(self, chart, yearly_savings_amount):
         savings, portfolio_value = self.savings_sim.sample_portfolio(
             self.savings_sim.initial_invest,
@@ -226,9 +238,31 @@ class Workarea:
         set_savings.hovered.connect(self.show_info_label_on_hover)
         set_growth.hovered.connect(self.show_info_label_on_hover)
         
+        if self.ui_slidemenu.show_real_savings_check_box.isChecked():
+            savings_real = [0] * max(len(savings), len(self.savings_sim.real_savings.savings))
+            growth_real = [0] * max(len(savings), len(self.savings_sim.real_savings.savings))
+            for v in self.savings_sim.real_savings.savings:
+                savings_real[v.year] = v.saving
+                growth_real[v.year] = v.value - v.saving
+            
+            set_savings_real = QtChart.QBarSet('Savings (real)')
+            set_savings_real.append(savings_real)
+            set_savings_real.setColor(QtGui.QColor(0xA6A21F))
+            set_growth_real = QtChart.QBarSet('Grwoth (real)')
+            set_growth_real.append(growth_real)
+            set_growth_real.setColor(QtGui.QColor(0xF7F019))
+            series_real = QtChart.QStackedBarSeries()
+            series_real.append(set_savings_real)
+            series_real.append(set_growth_real)
+            
+            set_savings_real.hovered.connect(self.show_info_label_on_hover)
+            set_growth_real.hovered.connect(self.show_info_label_on_hover)
+        
         chart.setLocalizeNumbers(True)
         chart.removeAllSeries()
-        chart.addSeries(series)
+        chart.addSeries(series)        
+        if self.ui_slidemenu.show_real_savings_check_box.isChecked():
+            chart.addSeries(series_real)
         
         year_axis = QtChart.QValueAxis()
         year_axis.setTickType(QtChart.QValueAxis.TicksDynamic)
@@ -254,6 +288,10 @@ class Workarea:
             chart.removeAxis(ax)
         chart.setAxisX(year_axis, series)
         chart.setAxisY(value_axis, series)
+        
+        if self.ui_slidemenu.show_real_savings_check_box.isChecked():
+            chart.setAxisX(year_axis, series_real)
+            chart.setAxisY(value_axis, series_real)
     
     def show_info_label_on_hover(self, status, index):
         if self.ui_slidemenu.include_tax_check_box.isChecked():
@@ -269,16 +307,33 @@ class Workarea:
         chart_annotation.setBrush(
             QtGui.QBrush(QtCore.Qt.black)
             )
+        
         set_savings, set_growth = chart.series()[0].barSets()
-        chart_annotation.setText(
-            ('Value after {} years:\n'
-             '{:>16,.2f} € (total)\n'
-             '{:>16,.2f} € (savings)\n'
-             '{:>16,.2f} € (growth)').format(
-                  index,
-                  set_savings[index] + set_growth[index],
-                  set_savings[index],
-                  set_growth[index]))
+        
+        if self.ui_slidemenu.show_real_savings_check_box.isChecked():
+            set_savings_real, set_growth_real = chart.series()[1].barSets()
+        
+        if self.ui_slidemenu.show_real_savings_check_box.isChecked():
+            chart_annotation.setText(
+                ('Value after {} years:\n'
+                 'Total:   {:,.2f} € ({:,.2f} € real)\n'
+                 'Savings: {:,.2f} € ({:,.2f} € real)\n'
+                 'Growth:  {:,.2f} € ({:,.2f} € real)').format(
+                      index,
+                      set_savings[index] + set_growth[index],
+                      set_savings_real[index] + set_growth_real[index],
+                      set_savings[index], set_savings_real[index],
+                      set_growth[index], set_growth_real[index]))
+        else:
+            chart_annotation.setText(
+                ('Value after {} years:\n'
+                 'Total:   {:,.2f} €\n'
+                 'Savings: {:,.2f} €\n'
+                 'Growth:  {:,.2f} €').format(
+                      index,
+                      set_savings[index] + set_growth[index],
+                      set_savings[index],
+                      set_growth[index]))
         
         x_axis = chart.axes(QtCore.Qt.Horizontal)[0]
         y_axis = chart.axes(QtCore.Qt.Vertical)[0]
@@ -322,10 +377,7 @@ class Workarea:
         
         setattr(self.savings_sim, _name, value)
         self._update_text_all_labels()
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_without_tax, self.savings_sim.yearly_savings_amount_without_tax)
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
+        self._update_all_charts()
         
         self._notify_change_observer()
     
@@ -355,19 +407,20 @@ class Workarea:
         self.savings_sim = _savings_sim
         
         self._update_text_all_labels()
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_without_tax, self.savings_sim.yearly_savings_amount_without_tax)
-        self._update_stacked_bar_chart(
-            self.ui_mainbody.chart_with_tax, self.savings_sim.yearly_savings_amount_with_tax)
+        self._update_all_charts()
     
     def open_dialog_savings(self):
-        dialog_savings = DialogSavings(self.savings_sim.savings)
+        dialog_savings = DialogSavings(self.savings_sim.real_savings)
         dialog_savings.exec()
+        if dialog_savings.changed:
+            self._update_all_charts()
+            self._notify_change_observer()
         
 class DialogSavings(QtWidgets.QDialog):
-    def __init__(self, savings):
+    def __init__(self, real_savings):
         super(DialogSavings, self).__init__()
-        self.savings = savings
+        self.real_savings = real_savings
+        self.changed = False
         self.setup_gui()
     
     def setup_gui(self):
@@ -376,7 +429,7 @@ class DialogSavings(QtWidgets.QDialog):
         self.setWindowTitle('Savings')
         
         self.table_model_savings = SavingsTableModel(
-            self.savings
+            self.real_savings
             )
         self.ui_dialog.table_view_savings.setModel(
             self.table_model_savings
@@ -389,21 +442,114 @@ class DialogSavings(QtWidgets.QDialog):
             )
         self.ui_dialog.table_view_savings.horizontalHeader().setStretchLastSection(True)
         
+        
+        self.ui_dialog.button_new.clicked.connect(
+            self.new_saving
+            )
+        self.ui_dialog.button_edit.clicked.connect(
+            self.edit_saving
+            )
+        self.ui_dialog.button_delete.clicked.connect(
+            self.delete_saving
+            )
+        
         self._update_table()
         
     def _update_table(self):
         self.table_model_savings.layoutChanged.emit()
         for i in range(self.table_model_savings.columnCount(None)):
             self.ui_dialog.table_view_savings.resizeColumnToContents(i)
+    
+    def new_saving(self):
+        dialog_new_update_saving = DialogNewUpdateSaving(
+            self.real_savings, saving = None
+            )
+        dialog_new_update_saving.exec()
+        if dialog_new_update_saving.accepted:
+            self.changed = True
+            self._update_table()
+    
+    def edit_saving(self):
+        saving = self._get_selected_saving()
+        if saving:
+            dialog_new_update_saving = DialogNewUpdateSaving(
+                self.real_savings, saving = saving
+                )
+            dialog_new_update_saving.exec()
+            if dialog_new_update_saving.accepted:
+                self.changed = True
+                self._update_table()
+    
+    def delete_saving(self):
+        saving = self._get_selected_saving()
+        if saving:
+            message = ('Do you really want to delete saving\n'
+                       '"Year {}: saving {:,.2f} €, total {:,.2f} €"?\n\n').format(
+                           saving.year, saving.saving, saving.value
+                           )
+            button = QtWidgets.QMessageBox.question(
+                self, 'Delete saving', message,
+                QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Yes
+                )
+            if button == QtWidgets.QMessageBox.Cancel:
+                return
+            
+            self.real_savings.delete_saving(saving)
+            self.changed = True
+            self._update_table()
+    
+    def _get_selected_saving(self):
+        saving = None
         
+        s = self.ui_dialog.table_view_savings.selectionModel().selectedRows()
+        if s:
+            row = s[0].row()
+            index = self.table_model_savings.createIndex(row, 0)
+            saving = self.table_model_savings.data(index, SavingsTableModel.GET_DATA_ROLE)
+        return saving
+
+class DialogNewUpdateSaving(QtWidgets.QDialog):
+    def __init__(self, real_savings, saving = None):
+        super(DialogNewUpdateSaving, self).__init__()
+        self.real_savings = real_savings
+        self.saving = saving
+        self.accepted = False
+        self.setup_gui()
+    
+    def setup_gui(self):
+        self.ui_dialog = Ui_Dialog_New_Update_Saving()
+        self.ui_dialog.setupUi(self)
+        self.setWindowTitle('Saving')
+        
+        if self.saving != None:
+            self.ui_dialog.spinbox_year.setValue(self.saving.year)
+            self.ui_dialog.spinbox_saving.setValue(self.saving.saving)
+            self.ui_dialog.spinbox_total.setValue(self.saving.value)
+    
+    def accept(self):
+        year = self.ui_dialog.spinbox_year.value()
+        saving = self.ui_dialog.spinbox_saving.value()
+        value = self.ui_dialog.spinbox_total.value()
+        
+        try:
+            if self.saving != None:
+                self.real_savings.update_saving(self.saving, year, saving, value)
+            else:
+                self.real_savings.create_saving(year, saving, value)
+        except Exception as err:
+            display_error(err)
+            return
+        
+        self.accepted = True
+        self.close()
 
 class SavingsTableModel(QtCore.QAbstractTableModel):
     
     GET_DATA_ROLE = QtCore.Qt.UserRole
     
-    def __init__(self, savings):
+    def __init__(self, real_savings):
         super(SavingsTableModel, self).__init__()
-        self.savings = savings
+        self.real_savings = real_savings
     
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
@@ -412,11 +558,11 @@ class SavingsTableModel(QtCore.QAbstractTableModel):
             col = index.column()
             
             if col == 0:
-                value_str = '{}'.format(row)
+                value_str = '{}'.format(self.real_savings.savings[row].year)
             elif col == 1:
-                value_str = ' {:.2f} €'.format(self.savings[row][0])
+                value_str = ' {:,.2f} €'.format(self.real_savings.savings[row].saving)
             elif col == 2:
-                value_str = ' {:.2f} €'.format(self.savings[row][1])
+                value_str = ' {:,.2f} €'.format(self.real_savings.savings[row].value)
             
             return value_str
         
@@ -428,11 +574,11 @@ class SavingsTableModel(QtCore.QAbstractTableModel):
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
         
         if role == self.GET_DATA_ROLE:
-            saving = self.savings[index.row()]
+            saving = self.real_savings.savings[index.row()]
             return saving
     
     def rowCount(self, index):
-        return len(self.savings)
+        return len(self.real_savings.savings)
     
     def columnCount(self, index):
         return 3

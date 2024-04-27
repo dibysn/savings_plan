@@ -1,13 +1,41 @@
 # -*- coding: utf-8 -*-
 
 import functools
+import bisect
 
 class Saving:
+    
     def __init__(self, year, saving, value):
         self.year = year
         self.saving = saving
         self.value = value
 
+class RealSavings:
+    
+    def __init__(self, savings = None):
+        self.savings = savings if savings != None else []
+    
+    def create_saving(self, year, saving, value):
+        
+        if year in [s.year for s in self.savings]:
+            raise Exception('Saving for year "{}" does already exist'.format(year))
+        
+        bisect.insort(
+            self.savings,
+            Saving(year, saving, value),
+            key = lambda x: x.year
+            )
+    
+    def update_saving(self, saving, new_year, new_saving, new_value):
+        self.create_saving(new_year, new_saving, new_value)
+        self.delete_saving(saving)
+    
+    def delete_saving(self, saving):
+        self.savings.remove(saving)
+    
+    def clear_all(self):
+        self.savings = []
+    
 class SavingsSimulation:
     
     def __init__(self,
@@ -54,16 +82,7 @@ class SavingsSimulation:
         self._is_saved = False
         self._compute_simulation()
         
-        self.savings = {}
-    
-    def create_saving(self, year, saving, value):
-        self.savings[year] = (saving, value)
-    
-    def update_saving(self, year, new_saving, new_value):
-        self.savings[year] = (new_saving, new_value)
-    
-    def delete_saving(self, year):
-        del self.savings[year]
+        self.real_savings = RealSavings()
     
     def update_computation(func):
         @functools.wraps(func)
@@ -273,6 +292,12 @@ class SavingsSimulation:
         return s
     
     def get_json_data_for_saving(self):
+        
+        _l = [
+            {'year': s.year, 'saving': s.saving, 'value': s.value}
+            for s in self.real_savings.savings
+            ]
+        
         _d = {
             'current_age': self.current_age,
             'retirement_age': self.retirement_age,
@@ -284,7 +309,8 @@ class SavingsSimulation:
             'flat_tax_rate': self.flat_tax_rate,
             'solidarity_tax': self.solidarity_tax,
             'church_tax': self.church_tax,
-            'notes': self.notes
+            'notes': self.notes,
+            'real_savings': _l
             }
         return _d
     
@@ -296,6 +322,9 @@ class SavingsSimulation:
             data['rate_of_return'], data['rate_of_inflation'],
             data['flat_tax_rate'], data['solidarity_tax'], data['church_tax'],
             data['notes'])
+        gs.real_savings = RealSavings()
+        for s in data['real_savings']:
+            gs.real_savings.create_saving(s['year'], s['saving'], s['value'])
         gs._is_saved = True
         return gs
     
