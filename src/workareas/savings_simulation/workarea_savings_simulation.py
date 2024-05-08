@@ -442,6 +442,9 @@ class DialogSavings(QtWidgets.QDialog):
             )
         self.ui_dialog.table_view_savings.horizontalHeader().setStretchLastSection(True)
         
+        self.ui_dialog.table_view_savings.doubleClicked.connect(
+            self.edit_saving
+            )
         
         self.ui_dialog.button_new.clicked.connect(
             self.new_saving

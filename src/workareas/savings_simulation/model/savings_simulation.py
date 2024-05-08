@@ -27,8 +27,8 @@ class RealSavings:
             )
     
     def update_saving(self, saving, new_year, new_saving, new_value):
-        self.create_saving(new_year, new_saving, new_value)
         self.delete_saving(saving)
+        self.create_saving(new_year, new_saving, new_value)
     
     def delete_saving(self, saving):
         self.savings.remove(saving)
