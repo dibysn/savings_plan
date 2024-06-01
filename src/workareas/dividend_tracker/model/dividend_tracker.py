@@ -149,6 +149,8 @@ class Share:
         self._tied_capital = None
         self._total_net_dividend_payments = None
         self._dividends_last_12_months = None
+        self._days_since_last_dividend_payment = None
+        self._date_last_dividend_payment = None
         
         self._compute_values()
     
@@ -216,6 +218,14 @@ class Share:
             d.amount_per_share for d in self.dividend_payments
             if (dt.today() - d.date).days < 365
             )
+        
+        # Days since last dividend payment
+        self._days_since_last_dividend_payment = math.inf
+        self._date_last_dividend_payment = None
+        if self.dividend_payments != []:
+            d = min(self.dividend_payments, key = lambda _d: (dt.today() - _d.date).days)
+            self._days_since_last_dividend_payment = (dt.today() - d.date).days
+            self._date_last_dividend_payment = d.date
     
     def get_json_data_for_saving(self):
         _buy = [
@@ -428,6 +438,14 @@ class Share:
     @property
     def total_net_dividend_payments(self):
         return self._total_net_dividend_payments
+    
+    @property
+    def days_since_last_dividend_payment(self):
+        return self._days_since_last_dividend_payment
+    
+    @property
+    def date_last_dividend_payment(self):
+        return self._date_last_dividend_payment
     
     def get_total_share_fee(self, start_date, end_date):
         fb = sum(

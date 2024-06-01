@@ -725,15 +725,17 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
 class ShareTableModel(QtCore.QAbstractTableModel):
     
     COLUMN_INFO = {
-        0: ['name', 'Name', ' {} ', str],
-        1: ['isin', 'ISIN', ' {} ', str],
-        2: ['number_of_shares', '# Shares', ' {:.2f}', float],
-        3: ['acquisition_price', 'Acquisition price', ' {:,.2f} €', float],
-        4: ['tied_capital', 'Tied capital', ' {:,.2f} €', float],
-        5: ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €', float],
-        6: ['total_net_dividend_payments', 'Total net dividends',' {:,.2f} €', float],
-        7: ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %', float],
-        8: ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %', float]
+        0:  ['name', 'Name', ' {} ', str],
+        1:  ['isin', 'ISIN', ' {} ', str],
+        2:  ['number_of_shares', '# Shares', ' {:.2f}', float],
+        3:  ['acquisition_price', 'Acquisition price', ' {:,.2f} €', float],
+        4:  ['tied_capital', 'Tied capital', ' {:,.2f} €', float],
+        5:  ['realized_profit_loss', 'Realized P/L', ' {:,.2f} €', float],
+        6:  ['total_net_dividend_payments', 'Total net dividends',' {:,.2f} €', float],
+        7:  ['yield_on_cost_12_months', 'YOC (12m)', ' {:,.2f} %', float],
+        8:  ['dividend_return_on_tied_capital_12_months', 'ROTC (12m)', ' {:,.2f} %', float],
+        9:  ['date_last_dividend_payment', 'Date last dividend', ' {} ', str],
+        10: ['days_since_last_dividend_payment', 'Days since last dividend', ' {:.0f} ', float]
         }
     
     USED_COLUMNS = list(COLUMN_INFO.keys())
@@ -1079,13 +1081,13 @@ class DialogTableSettings(QtWidgets.QDialog):
             self.reset_used_columns_to_default
             )
         
-        all_header_displayed = []
-        all_header_not_displayed = []
-        for i, v in self.id_to_name.items():
-            if i in self.used_columns:
-                all_header_displayed.append(v)
-            else:
-                all_header_not_displayed.append(v)
+        all_header_displayed = [
+            self.id_to_name[i] for i in self.used_columns
+            ]
+        
+        all_header_not_displayed = [
+            v for i, v in self.id_to_name.items() if i not in self.used_columns
+            ]
             
         self.ui_dialog.list_displayed.addItems(all_header_displayed)
         self.ui_dialog.list_not_displayed.addItems(all_header_not_displayed)
