@@ -389,13 +389,16 @@ class Workarea:
             _labels.append('{:>11,.2f} € (Fee)')
         
         x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
-        annotation_text = 'Year {}:'.format(x_axis_categories[index])
+        year = x_axis_categories[index]
+        annotation_text = 'Year {}:'.format(year)
         _sum = 0.0
         for _l, _s in zip(_labels, _sets):
             annotation_text += '\n'
             annotation_text += _l.format(_s[index])
             _sum += _s[index]
         annotation_text += '\n{:>11,.2f} € (per month)'.format(_sum/12)
+        ndays = (dt(int(year)+1,1,1) - dt(int(year),1,1)).days
+        annotation_text += '\n{:>11,.2f} € (per day)'.format(_sum/ndays)
         chart_annotation.setText(annotation_text)
         
         y_axis = chart.axes(QtCore.Qt.Vertical)[0]

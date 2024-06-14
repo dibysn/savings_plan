@@ -248,7 +248,7 @@ class Workarea:
             set_savings_real = QtChart.QBarSet('Savings (real)')
             set_savings_real.append(savings_real)
             set_savings_real.setColor(QtGui.QColor(0xA6A21F))
-            set_growth_real = QtChart.QBarSet('Grwoth (real)')
+            set_growth_real = QtChart.QBarSet('Growth (real)')
             set_growth_real.append(growth_real)
             set_growth_real.setColor(QtGui.QColor(0xF7F019))
             series_real = QtChart.QStackedBarSeries()
