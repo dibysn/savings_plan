@@ -895,61 +895,41 @@ class DialogBooking(QtWidgets.QDialog):
         shadow.setColor(QtGui.QColor(0, 0, 0, 255))
         self.ui_dialog.frame_header.setGraphicsEffect(shadow)
         
-        self.ui_dialog.combo_box_type.currentIndexChanged['QString'].connect(
-            lambda v: self.ui_dialog.total_value.setText(
-                '{:,.2f} €'.format(
-                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
-                    (1-2*(v == 'Dividend'))*self.ui_dialog.fee.value() + \
-                    (1-2*(v == 'Dividend'))*self.ui_dialog.tax.value()
-                    )
-                )
+        self.ui_dialog.combo_box_type.currentIndexChanged.connect(
+            self._update_total_value_and_total_amount
             )
         
-        self.ui_dialog.number_of_shares.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_amount.setText(
-                '{:,.2f} €'.format(v * self.ui_dialog.amount_per_share.value())
-                )
+        self.ui_dialog.number_of_shares.valueChanged.connect(
+            self._update_total_value_and_total_amount
             )
-        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_amount.setText(
-                '{:,.2f} €'.format(self.ui_dialog.number_of_shares.value() * v)
-                )
+        self.ui_dialog.amount_per_share.valueChanged.connect(
+            self._update_total_value_and_total_amount
             )
         
-        self.ui_dialog.number_of_shares.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_value.setText(
-                '{:,.2f} €'.format(
-                    v * self.ui_dialog.amount_per_share.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
-                    )
-                )
+        self.ui_dialog.fee.valueChanged.connect(
+            self._update_total_value_and_total_amount
             )
-        self.ui_dialog.amount_per_share.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_value.setText(
-                '{:,.2f} €'.format(
-                    self.ui_dialog.number_of_shares.value() * v + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
-                    )
-                )
+        self.ui_dialog.tax.valueChanged.connect(
+            self._update_total_value_and_total_amount
             )
-        self.ui_dialog.fee.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_value.setText(
-                '{:,.2f} €'.format(
-                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*v + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
-                    )
-                )
+    
+    def _update_total_value_and_total_amount(self):
+        number_of_shares = self.ui_dialog.number_of_shares.value()
+        amount_per_share = self.ui_dialog.amount_per_share.value()
+        
+        self.ui_dialog.total_amount.setText(
+            '{:,.2f} €'.format(number_of_shares * amount_per_share)
             )
-        self.ui_dialog.tax.valueChanged['double'].connect(
-            lambda v: self.ui_dialog.total_value.setText(
-                '{:,.2f} €'.format(
-                    self.ui_dialog.number_of_shares.value() * self.ui_dialog.amount_per_share.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
-                    (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*v
-                    )
+        
+        _factor = 1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
+            _factor = -1.0
+        
+        self.ui_dialog.total_value.setText(
+            '{:,.2f} €'.format(
+                number_of_shares * amount_per_share + \
+                _factor * self.ui_dialog.fee.value() + \
+                _factor * self.ui_dialog.tax.value()
                 )
             )
     
@@ -995,12 +975,17 @@ class DialogBooking(QtWidgets.QDialog):
                 self.ui_dialog.amount_per_share.value()
                 )
             )
+        
+        _factor = 1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
+            _factor = -1.0
+        
         self.ui_dialog.total_value.setText(
             '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value() + \
-                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
-                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
+                _factor * self.ui_dialog.fee.value() + \
+                _factor * self.ui_dialog.tax.value()
                 )
             )
     
@@ -1024,12 +1009,16 @@ class DialogBooking(QtWidgets.QDialog):
         self.ui_dialog.fee.setValue(self.booking.fee)
         self.ui_dialog.tax.setValue(self.booking.tax)
         
+        _factor = 1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
+            _factor = -1.0
+        
         self.ui_dialog.total_value.setText(
             '{:,.2f} €'.format(
                 self.ui_dialog.number_of_shares.value() * \
                 self.ui_dialog.amount_per_share.value() + \
-                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.fee.value() + \
-                (1-2*(self.ui_dialog.combo_box_type.currentText() == 'Dividend'))*self.ui_dialog.tax.value()
+                _factor * self.ui_dialog.fee.value() + \
+                _factor * self.ui_dialog.tax.value()
                 )
             )
     
