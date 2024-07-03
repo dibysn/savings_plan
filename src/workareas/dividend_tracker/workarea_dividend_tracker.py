@@ -921,9 +921,9 @@ class DialogBooking(QtWidgets.QDialog):
             '{:,.2f} €'.format(number_of_shares * amount_per_share)
             )
         
-        _factor = 1.0
-        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
-            _factor = -1.0
+        _factor = -1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Buy':
+            _factor = 1.0
         
         self.ui_dialog.total_value.setText(
             '{:,.2f} €'.format(
@@ -976,9 +976,9 @@ class DialogBooking(QtWidgets.QDialog):
                 )
             )
         
-        _factor = 1.0
-        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
-            _factor = -1.0
+        _factor = -1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Buy':
+            _factor = 1.0
         
         self.ui_dialog.total_value.setText(
             '{:,.2f} €'.format(
@@ -1009,9 +1009,9 @@ class DialogBooking(QtWidgets.QDialog):
         self.ui_dialog.fee.setValue(self.booking.fee)
         self.ui_dialog.tax.setValue(self.booking.tax)
         
-        _factor = 1.0
-        if self.ui_dialog.combo_box_type.currentText() == 'Dividend':
-            _factor = -1.0
+        _factor = -1.0
+        if self.ui_dialog.combo_box_type.currentText() == 'Buy':
+            _factor = 1.0
         
         self.ui_dialog.total_value.setText(
             '{:,.2f} €'.format(
