@@ -334,7 +334,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label_19.setText(_translate("Form", "DATA INPUT"))
+        self.label_19.setText(_translate("Form", "SAVINGS SIMULATION"))
         self.label_9.setText(_translate("Form", "Expected age"))
         self.expected_age.setSuffix(_translate("Form", " years"))
         self.current_age.setSuffix(_translate("Form", " years"))

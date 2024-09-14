@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ui_slidemenu_dividend_tracker.ui'
+# Form implementation generated from reading ui file 'ui_slidemenu_passive_income.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -64,12 +64,9 @@ class Ui_Form(object):
         self.verticalLayout_5.setContentsMargins(9, -1, 9, -1)
         self.verticalLayout_5.setSpacing(6)
         self.verticalLayout_5.setObjectName("verticalLayout_5")
-        self.button_new_portfolio = QtWidgets.QPushButton(self.frame_3)
-        self.button_new_portfolio.setObjectName("button_new_portfolio")
-        self.verticalLayout_5.addWidget(self.button_new_portfolio)
-        self.button_new_share = QtWidgets.QPushButton(self.frame_3)
-        self.button_new_share.setObjectName("button_new_share")
-        self.verticalLayout_5.addWidget(self.button_new_share)
+        self.button_categories = QtWidgets.QPushButton(self.frame_3)
+        self.button_categories.setObjectName("button_categories")
+        self.verticalLayout_5.addWidget(self.button_categories)
         self.button_new_booking = QtWidgets.QPushButton(self.frame_3)
         self.button_new_booking.setObjectName("button_new_booking")
         self.verticalLayout_5.addWidget(self.button_new_booking)
@@ -84,10 +81,8 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label.setText(_translate("Form", "DIVIDEND TRACKER"))
-        self.button_new_portfolio.setText(_translate("Form", "New portfolio..."))
-        self.button_new_portfolio.setProperty("class", _translate("Form", "btn_slidemenu"))
-        self.button_new_share.setText(_translate("Form", "New share..."))
-        self.button_new_share.setProperty("class", _translate("Form", "btn_slidemenu"))
+        self.label.setText(_translate("Form", "PASSIVE INCOME"))
+        self.button_categories.setText(_translate("Form", "Categories..."))
+        self.button_categories.setProperty("class", _translate("Form", "btn_slidemenu"))
         self.button_new_booking.setText(_translate("Form", "New booking..."))
         self.button_new_booking.setProperty("class", _translate("Form", "btn_slidemenu"))

@@ -118,7 +118,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label.setText(_translate("Form", "PORTFOLIO"))
+        self.label.setText(_translate("Form", "TRADING"))
         self.button_new_portfolio.setText(_translate("Form", "New portfolio..."))
         self.button_new_portfolio.setProperty("class", _translate("Form", "btn_slidemenu"))
         self.button_edit_portfolio.setText(_translate("Form", "Edit portfolio..."))

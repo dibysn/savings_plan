@@ -10,6 +10,7 @@ from src.savings_plan_ui import Ui_MainWindow
 from src.workareas.savings_simulation import workarea_savings_simulation
 from src.workareas.trading import workarea_trading
 from src.workareas.dividend_tracker import workarea_dividend_tracker
+from src.workareas.passive_income import workarea_passive_income
 
 def display_error(err):
     msg_box = QtWidgets.QMessageBox()
@@ -83,6 +84,11 @@ class MainWindow(QtWidgets.QMainWindow):
         slidemenu_workarea_dividend_tracker, \
         mainbody_workarea_dividend_tracker = workarea_dividend_tracker.get_workarea_icon_and_widgets()
         
+        wa_passive_income, \
+        icon_workarea_passive_income, \
+        slidemenu_workarea_passive_income, \
+        mainbody_workarea_passive_income = workarea_passive_income.get_workarea_icon_and_widgets()
+        
         wa_trading, \
         icon_workarea_trading, \
         slidemenu_workarea_trading, \
@@ -91,24 +97,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.workareas = {
             wa_savings_plan.get_name_of_workarea(): wa_savings_plan,
             wa_dividend_tracker.get_name_of_workarea(): wa_dividend_tracker,
+            wa_passive_income.get_name_of_workarea(): wa_passive_income,
             wa_trading.get_name_of_workarea(): wa_trading
             }
         
         self.slidemenu_workareas = [
             slidemenu_workarea_savings_plan,
             slidemenu_workarea_dividend_tracker,
+            slidemenu_workarea_passive_income,
             slidemenu_workarea_trading
             ]
         self.mainbody_workareas = [
             mainbody_workarea_savings_plan,
             mainbody_workarea_dividend_tracker,
+            mainbody_workarea_passive_income,
             mainbody_workarea_trading
             ]
-        self.icons_workareas = [
-            icon_workarea_savings_plan,
-            icon_workarea_dividend_tracker,
-            icon_workarea_trading
-            ]
+        self.icons_workareas = {
+            wa_savings_plan.get_name_of_workarea(): icon_workarea_savings_plan,
+            wa_dividend_tracker.get_name_of_workarea(): icon_workarea_dividend_tracker,
+            wa_passive_income.get_name_of_workarea(): icon_workarea_passive_income,
+            wa_trading.get_name_of_workarea(): icon_workarea_trading
+            }
         
         self.register_workareas()
         
@@ -130,7 +140,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for m_workarea in self.mainbody_workareas:
             self.ui.stackedWidget_mainbody.addWidget(m_workarea)
         
-        for n, icon in enumerate(self.icons_workareas):
+        for n, (wa_name, icon) in enumerate(self.icons_workareas.items()):
             button = QtWidgets.QPushButton(self.ui.frame_workareas_buttons)
             button.setText('')
             
@@ -139,6 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
             button.setFlat(True)
             button.setObjectName('btn_workarea_{}'.format(n))
             button.setProperty('class', 'btn_mainwindow')
+            button.setToolTip(wa_name)
             self.ui.verticalLayoutWorkareaButtons.addWidget(button)
             
             button.clicked.connect(activate_workarea(n))

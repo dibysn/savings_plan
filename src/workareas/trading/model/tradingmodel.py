@@ -227,7 +227,7 @@ class Trade:
         
         search_for = '<td class="longprice"><strong id="last">'
         start = html.find(search_for) + len(search_for)
-        self.latest_price = float(html[start:start+5].replace(',','.'))
+        self.latest_price = float(html[start:start+8].replace(',','.').split('<')[0])
         self.date_latest_price = date.today()
     
     @property

@@ -183,7 +183,7 @@ class Workarea:
             callback()
     
     def get_name_of_workarea(self):
-        return 'Dividend tracker'
+        return 'Dividend Tracker'
     
     def get_json_data_for_saving(self):
         return {
@@ -681,7 +681,7 @@ class BookingsTableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.TextAlignmentRole:
             col = index.column()
             attr_format = self.COLUMN_INFO[col][2]
-            if attr_format != '{}':
+            if attr_format != ' {} ':
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
             else:
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
@@ -772,7 +772,7 @@ class ShareTableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.TextAlignmentRole:
             col = index.column()
             attr_format = self.COLUMN_INFO[col][2]
-            if attr_format != '{}':
+            if attr_format != ' {} ':
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignRight
             else:
                 return QtCore.Qt.AlignVCenter + QtCore.Qt.AlignLeft
