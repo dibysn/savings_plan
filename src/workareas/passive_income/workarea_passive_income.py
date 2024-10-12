@@ -214,37 +214,50 @@ class Workarea:
                 self.ui_mainbody.chart_dashboard.removeAxis(ax)
             return
         
+        passive_income_net_amount_by_category_and_year = {
+            c: [] for c in self.passive_income.categories
+            }
+        for _y in _years:
+            _d = self.passive_income.get_total_net_amount_by_category(
+                dt(_y, 1, 1), dt(_y, 12, 31)
+                )
+            for c, v in _d.items():
+                passive_income_net_amount_by_category_and_year[c].append(v)
+        
+        try:
+            _max_value = max(
+                sum(y) for y in zip(*passive_income_net_amount_by_category_and_year.values())
+                )
+        except:
+            _max_value = 0
+        
+        
         passive_income_fee_by_year = [
-            sum(v for _,v in self.passive_income.get_total_fee_by_category(
+            sum(v for _, v in self.passive_income.get_total_fee_by_category(
                 dt(_y, 1, 1), dt(_y, 12, 31)
                 ).items()) for _y in _years
             ]
         passive_income_tax_by_year = [
-            sum(v for _,v in self.passive_income.get_total_tax_by_category(
+            sum(v for _, v in self.passive_income.get_total_tax_by_category(
                 dt(_y, 1, 1), dt(_y, 12, 31)
                 ).items()) for _y in _years
             ]
         passive_income_amount_by_year = [
-            sum(v for _,v in self.passive_income.get_total_amount_by_category(
+            sum(v for _, v in self.passive_income.get_total_amount_by_category(
                 dt(_y, 1, 1), dt(_y, 12, 31)
                 ).items()) for _y in _years
-            ]
-        net_passive_income_by_year = [
-            p-t-f for p,t,f in zip(
-                passive_income_amount_by_year,
-                passive_income_tax_by_year,
-                passive_income_fee_by_year
-                )
             ]
         
         series = QtChart.QStackedBarSeries()
         
-        _max_value = max(net_passive_income_by_year)
-        set_passive_income = QtChart.QBarSet('Net passive income')
-        set_passive_income.append(net_passive_income_by_year)
-        set_passive_income.setColor(QtGui.QColor(0x25B92E))
-        set_passive_income.hovered.connect(self._show_info_label_on_hover)
-        series.append(set_passive_income)
+        for c, v in passive_income_net_amount_by_category_and_year.items():
+            set_passive_income = QtChart.QBarSet('{}'.format(c))
+            set_passive_income.append(v)
+            set_passive_income.setColor(
+                QtGui.QColor(self.passive_income.colors_by_category[c])
+                )
+            set_passive_income.hovered.connect(self._show_info_label_on_hover)
+            series.append(set_passive_income)
         
         if self.ui_mainbody.check_box_tax.isChecked():
             _max_value += max(passive_income_tax_by_year)
@@ -288,8 +301,6 @@ class Workarea:
         self.ui_mainbody.chart_dashboard.setAxisY(value_axis, series)
     
     def _show_info_label_on_hover(self, status, index):
-        # TODO
-        # categories = self.passive_income.categories
         
         chart = self.ui_mainbody.chart_dashboard
         chart_annotation = self.chart_dashboard_annotation
@@ -302,11 +313,9 @@ class Workarea:
         
         _sets = chart.series()[0].barSets()
         
-        _labels = ['{:>11,.2f} € (Net passive income)']
-        if self.ui_mainbody.check_box_tax.isChecked():
-            _labels.append('{:>11,.2f} € (Tax)')
-        if self.ui_mainbody.check_box_fee.isChecked():
-            _labels.append('{:>11,.2f} € (Fee)')
+        _labels = []
+        for _s in _sets:
+            _labels.append('{:>11,.2f} €' + ' ({})'.format(_s.label()))
         
         x_axis_categories = chart.axes(QtCore.Qt.Horizontal)[0].categories()
         year = x_axis_categories[index]
@@ -316,6 +325,9 @@ class Workarea:
             annotation_text += '\n'
             annotation_text += _l.format(_s[index])
             _sum += _s[index]
+        
+        annotation_text += '\n'
+        annotation_text += '\n{:>11,.2f} € (Passive income)'.format(_sum)
         annotation_text += '\n{:>11,.2f} € (per month)'.format(_sum/12)
         ndays = (dt(int(year)+1,1,1) - dt(int(year),1,1)).days
         annotation_text += '\n{:>11,.2f} € (per day)'.format(_sum/ndays)
@@ -653,8 +665,19 @@ class DialogCategory(QtWidgets.QDialog):
         
         self._reload_categories()
         
+        def _show_selected_item(c):
+            self.ui_dialog.line_edit_name.setText(c)
+            if c != '':
+                color = self.passive_income.colors_by_category[c]
+                self.ui_dialog.label_color.setStyleSheet(
+                    'background-color: {}'.format(color)
+                    )
+        
         self.ui_dialog.list_categories.currentTextChanged.connect(
-            lambda v: self.ui_dialog.line_edit_name.setText(v)
+            _show_selected_item
+            )
+        self.ui_dialog.button_color.clicked.connect(
+            self.color_picker
             )
         self.ui_dialog.button_create.clicked.connect(
             self.create_category
@@ -670,14 +693,26 @@ class DialogCategory(QtWidgets.QDialog):
     
     def _reload_categories(self):
         self.ui_dialog.list_categories.clear()
-        self.ui_dialog.list_categories.addItems(
-            self.passive_income.categories
+        
+        for (cat, col) in self.passive_income.categories_and_colors:
+            pixmap = QtGui.QPixmap(20, 20)
+            pixmap.fill(QtGui.QColor(col))
+            icon = QtGui.QIcon(pixmap)
+            self.ui_dialog.list_categories.addItem(
+                QtWidgets.QListWidgetItem(icon, cat)
+                )
+    
+    def color_picker(self):
+        color = QtWidgets.QColorDialog.getColor()
+        self.ui_dialog.label_color.setStyleSheet(
+            'background-color: {}'.format(color.name())
             )
     
     def create_category(self):
         category = self.ui_dialog.line_edit_name.text()
+        color = self.ui_dialog.label_color.palette().window().color().name()
         try:
-            self.passive_income.create_category(category)
+            self.passive_income.create_category(category, color)
         except Exception as err:
             display_error(err)
             return
@@ -688,8 +723,11 @@ class DialogCategory(QtWidgets.QDialog):
         if category != []:
             category = category[0]
             new_category = self.ui_dialog.line_edit_name.text()
+            new_color = self.ui_dialog.label_color.palette().window().color().name()
             try:
-                self.passive_income.update_category(category.text(), new_category)
+                self.passive_income.update_category(
+                    category.text(), new_category, new_color
+                    )
             except Exception as err:
                 display_error(err)
                 return
