@@ -82,6 +82,7 @@ class Ui_Dialog(object):
         self.horizontalLayout.addWidget(self.line_edit_name)
         self.label_color = QtWidgets.QLabel(self.frame_4)
         self.label_color.setStyleSheet("background-color: #3911ed")
+        self.label_color.setText("")
         self.label_color.setObjectName("label_color")
         self.horizontalLayout.addWidget(self.label_color)
         self.button_color = QtWidgets.QPushButton(self.frame_4)
@@ -115,12 +116,16 @@ class Ui_Dialog(object):
         self.buttonBox.accepted.connect(Dialog.accept) # type: ignore
         self.buttonBox.rejected.connect(Dialog.reject) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(Dialog)
+        Dialog.setTabOrder(self.list_categories, self.line_edit_name)
+        Dialog.setTabOrder(self.line_edit_name, self.button_color)
+        Dialog.setTabOrder(self.button_color, self.button_create)
+        Dialog.setTabOrder(self.button_create, self.button_update)
+        Dialog.setTabOrder(self.button_update, self.button_delete)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label_12.setText(_translate("Dialog", "CATEGORY"))
-        self.label_color.setText(_translate("Dialog", "       "))
         self.button_color.setText(_translate("Dialog", "Color..."))
         self.button_create.setText(_translate("Dialog", "Add"))
         self.button_delete.setText(_translate("Dialog", "Delete"))

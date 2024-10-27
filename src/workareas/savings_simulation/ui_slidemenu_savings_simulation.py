@@ -330,6 +330,19 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
+        Form.setTabOrder(self.current_age, self.retirement_age)
+        Form.setTabOrder(self.retirement_age, self.expected_age)
+        Form.setTabOrder(self.expected_age, self.rate_of_return)
+        Form.setTabOrder(self.rate_of_return, self.rate_of_inflation)
+        Form.setTabOrder(self.rate_of_inflation, self.include_tax_check_box)
+        Form.setTabOrder(self.include_tax_check_box, self.flat_tax_rate)
+        Form.setTabOrder(self.flat_tax_rate, self.solidarity_tax)
+        Form.setTabOrder(self.solidarity_tax, self.church_tax)
+        Form.setTabOrder(self.church_tax, self.initial_invest)
+        Form.setTabOrder(self.initial_invest, self.monthly_withdrawal_nominal)
+        Form.setTabOrder(self.monthly_withdrawal_nominal, self.notes)
+        Form.setTabOrder(self.notes, self.show_real_savings_check_box)
+        Form.setTabOrder(self.show_real_savings_check_box, self.button_savings)
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
