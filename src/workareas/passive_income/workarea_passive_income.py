@@ -322,9 +322,10 @@ class Workarea:
         annotation_text = 'Year {}:'.format(year)
         _sum = 0.0
         for _l, _s in zip(_labels, _sets):
-            annotation_text += '\n'
-            annotation_text += _l.format(_s[index])
-            _sum += _s[index]
+            if _s[index] != 0.0:
+                annotation_text += '\n'
+                annotation_text += _l.format(_s[index])
+                _sum += _s[index]
         
         annotation_text += '\n'
         annotation_text += '\n{:>11,.2f} € (Passive income)'.format(_sum)
