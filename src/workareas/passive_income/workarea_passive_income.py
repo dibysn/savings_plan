@@ -65,6 +65,7 @@ class Workarea:
             _w.setGraphicsEffect(shadow)
         
         self.passive_income = PassiveIncome()
+        self.order_categories = {}
         
         self.ui_mainbody.spin_box_end_year.valueChanged.connect(
             lambda n: self.ui_mainbody.spin_box_start_year.setMaximum(n)
@@ -164,13 +165,15 @@ class Workarea:
     def get_json_data_for_saving(self):
         return {
             'Columns': PassiveIncomeTableModel.USED_COLUMNS,
-            'Bookings': self.passive_income.get_json_data_for_saving()
+            'Bookings': self.passive_income.get_json_data_for_saving(),
+            'Order Categories': self.order_categories
             }
     
     def load_from_json_data(self, data):
         try:
             _passive_income = PassiveIncome.load_from_json_data(data['Bookings'])
             PassiveIncomeTableModel.USED_COLUMNS = data['Columns']
+            self.order_categories = data['Order Categories']
         except Exception as err:
             display_error(err)
             raise err
@@ -215,7 +218,7 @@ class Workarea:
             return
         
         passive_income_net_amount_by_category_and_year = {
-            c: [] for c in self.passive_income.categories
+            c: [] for c in reversed(self.order_categories)
             }
         for _y in _years:
             _d = self.passive_income.get_total_net_amount_by_category(
@@ -321,7 +324,7 @@ class Workarea:
         year = x_axis_categories[index]
         annotation_text = 'Year {}:'.format(year)
         _sum = 0.0
-        for _l, _s in zip(_labels, _sets):
+        for _l, _s in zip(reversed(_labels), reversed(_sets)):
             if _s[index] != 0.0:
                 annotation_text += '\n'
                 annotation_text += _l.format(_s[index])
@@ -442,9 +445,12 @@ class Workarea:
         self.table_model_all_bookings.layoutAboutToBeChanged.emit()
         
         dialog_category = DialogCategory(
-            self.passive_income
+            self.passive_income,
+            self.order_categories
             )
         dialog_category.exec()
+        
+        self.order_categories = dialog_category.order_categories
         
         self._update_table()
         self._update_all_portfolio_specific_values()
@@ -647,9 +653,10 @@ class DialogBooking(QtWidgets.QDialog):
         self.close()
 
 class DialogCategory(QtWidgets.QDialog):
-    def __init__(self, passive_income):
+    def __init__(self, passive_income, order_categories):
         super(DialogCategory, self).__init__()
         self.passive_income = passive_income
+        self.order_categories = order_categories
         self.setup_gui()
     
     def setup_gui(self):
@@ -695,7 +702,8 @@ class DialogCategory(QtWidgets.QDialog):
     def _reload_categories(self):
         self.ui_dialog.list_categories.clear()
         
-        for (cat, col) in self.passive_income.categories_and_colors:
+        for cat in self.order_categories:
+            col = self.passive_income.colors_by_category[cat]
             pixmap = QtGui.QPixmap(20, 20)
             pixmap.fill(QtGui.QColor(col))
             icon = QtGui.QIcon(pixmap)
@@ -714,6 +722,7 @@ class DialogCategory(QtWidgets.QDialog):
         color = self.ui_dialog.label_color.palette().window().color().name()
         try:
             self.passive_income.create_category(category, color)
+            self.order_categories.append(category)
         except Exception as err:
             display_error(err)
             return
@@ -729,6 +738,10 @@ class DialogCategory(QtWidgets.QDialog):
                 self.passive_income.update_category(
                     category.text(), new_category, new_color
                     )
+                self.order_categories = [
+                    new_category if c == category.text() else c
+                    for c in self.order_categories
+                    ]
             except Exception as err:
                 display_error(err)
                 return
@@ -751,10 +764,18 @@ class DialogCategory(QtWidgets.QDialog):
             
             try:
                 self.passive_income.delete_category(category.text())
+                self.order_categories.remove(category.text())
             except Exception as err:
                 display_error(err)
                 return
             self._reload_categories()
+    
+    def accept(self):
+        self.order_categories = [
+            self.ui_dialog.list_categories.item(i).text() \
+                for i in range(self.ui_dialog.list_categories.count())
+                ]
+        self.close()
 
 class DialogTableSettings(QtWidgets.QDialog):
     def __init__(self, all_column_data, used_columns):

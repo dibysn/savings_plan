@@ -65,6 +65,8 @@ class Ui_Dialog(object):
         self.verticalLayout_2 = QtWidgets.QVBoxLayout(self.frame_3)
         self.verticalLayout_2.setObjectName("verticalLayout_2")
         self.list_categories = QtWidgets.QListWidget(self.frame_3)
+        self.list_categories.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+        self.list_categories.setDefaultDropAction(QtCore.Qt.MoveAction)
         self.list_categories.setObjectName("list_categories")
         self.verticalLayout_2.addWidget(self.list_categories)
         self.verticalLayout_3.addWidget(self.frame_3)
@@ -82,7 +84,6 @@ class Ui_Dialog(object):
         self.horizontalLayout.addWidget(self.line_edit_name)
         self.label_color = QtWidgets.QLabel(self.frame_4)
         self.label_color.setStyleSheet("background-color: #3911ed")
-        self.label_color.setText("")
         self.label_color.setObjectName("label_color")
         self.horizontalLayout.addWidget(self.label_color)
         self.button_color = QtWidgets.QPushButton(self.frame_4)
@@ -108,7 +109,7 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.frame_5)
         self.buttonBox = QtWidgets.QDialogButtonBox(Dialog)
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
-        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Close)
+        self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName("buttonBox")
         self.verticalLayout.addWidget(self.buttonBox)
 
@@ -126,6 +127,7 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Dialog"))
         self.label_12.setText(_translate("Dialog", "CATEGORY"))
+        self.label_color.setText(_translate("Dialog", "       "))
         self.button_color.setText(_translate("Dialog", "Color..."))
         self.button_create.setText(_translate("Dialog", "Add"))
         self.button_delete.setText(_translate("Dialog", "Delete"))
